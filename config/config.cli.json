@@ -1,0 +1,41 @@
+{
+  "vllm": {
+    "base_url": "http://localhost:8000/v1",
+    "model": "gpt-oss-medium",
+    "api_key": "dummy",
+    "temperature": 0.7,
+    "max_tokens": 2048,
+    "available_models": [
+      "gpt-oss-low",
+      "gpt-oss-medium",
+      "gpt-oss-high"
+    ],
+    "default_model_index": 1
+  },
+  
+  "telegram": {
+    "token": "",
+    "allowed_users": []
+  },
+  
+  "workspace": {
+    "dir": "./workspace",
+    "max_file_size_mb": 10
+  },
+  
+  "security": {
+    "exec_enabled": true,
+    "exec_timeout": 30,
+    "exec_max_output": 200000,
+    "allowed_commands": [
+      "ls", "cat", "pwd", "echo", "grep", "find", "head", "tail", "wc",
+      "git", "python", "python3", "node", "npm", "pip"
+    ]
+  },
+  
+  "system_prompt": {
+    "role": "You are a helpful AI assistant with access to file operations and command execution.",
+    "workspace_note": "Your working directory is: {workspace_dir}",
+    "tools_note": "Available tools: read, write, edit, exec"
+  }
+}

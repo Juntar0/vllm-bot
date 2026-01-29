@@ -1,0 +1,178 @@
+"""
+Agent - Orchestrates LLM and tool execution
+"""
+import json
+import re
+from typing import List, Dict, Any, Optional
+from .vllm_provider import VLLMProvider
+from .tools import ToolExecutor, TOOL_DEFINITIONS
+
+
+class Agent:
+    def __init__(self, vllm_config: Dict[str, Any], workspace_config: Dict[str, Any], 
+                 security_config: Dict[str, Any], system_prompt_config: Dict[str, Any]):
+        self.vllm = VLLMProvider(vllm_config)
+        self.tools = ToolExecutor(workspace_config["dir"], security_config)
+        self.system_prompt_config = system_prompt_config
+        self.workspace_dir = workspace_config["dir"]
+        
+        # Conversation history per user
+        self.conversations: Dict[int, List[Dict[str, str]]] = {}
+        
+    def _build_system_prompt(self) -> str:
+        """
+        Build system prompt dynamically (inspired by Clawdbot)
+        """
+        lines = []
+        
+        # Role
+        lines.append(self.system_prompt_config.get("role", "You are a helpful assistant."))
+        lines.append("")
+        
+        # Workspace
+        workspace_note = self.system_prompt_config.get("workspace_note", "")
+        if workspace_note:
+            lines.append(workspace_note.format(workspace_dir=self.workspace_dir))
+            lines.append("")
+        
+        # Tools
+        tools_note = self.system_prompt_config.get("tools_note", "")
+        if tools_note:
+            lines.append("## Available Tools")
+            lines.append("")
+            lines.append("- **read(path, offset?, limit?)**: Read file contents")
+            lines.append("- **write(path, content)**: Write or create a file")
+            lines.append("- **edit(path, oldText, newText)**: Edit file by replacing exact text")
+            lines.append("- **exec(command)**: Execute shell command")
+            lines.append("")
+            lines.append("## Tool Call Format")
+            lines.append("")
+            lines.append("To call a tool, use this exact format:")
+            lines.append("```")
+            lines.append("TOOL_CALL: {")
+            lines.append('  "name": "tool_name",')
+            lines.append('  "args": { ... }')
+            lines.append("}")
+            lines.append("```")
+            lines.append("")
+            lines.append("Example:")
+            lines.append("```")
+            lines.append("TOOL_CALL: {")
+            lines.append('  "name": "read",')
+            lines.append('  "args": { "path": "README.md" }')
+            lines.append("}")
+            lines.append("```")
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _get_conversation(self, user_id: int) -> List[Dict[str, str]]:
+        """
+        Get or create conversation history for user
+        """
+        if user_id not in self.conversations:
+            self.conversations[user_id] = [
+                {"role": "system", "content": self._build_system_prompt()}
+            ]
+        return self.conversations[user_id]
+    
+    def _parse_tool_calls(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Parse tool calls from text (simple regex-based for non-function-calling models)
+        """
+        tool_calls = []
+        
+        # Match: TOOL_CALL: { ... }
+        pattern = r'TOOL_CALL:\s*(\{[^}]+\})'
+        matches = re.finditer(pattern, text, re.DOTALL)
+        
+        for match in matches:
+            try:
+                tool_call = json.loads(match.group(1))
+                if "name" in tool_call and "args" in tool_call:
+                    tool_calls.append(tool_call)
+            except json.JSONDecodeError:
+                continue
+        
+        return tool_calls
+    
+    def _execute_tools(self, tool_calls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Execute tool calls and return results
+        """
+        results = []
+        for call in tool_calls:
+            name = call["name"]
+            args = call["args"]
+            result = self.tools.execute(name, args)
+            results.append({
+                "name": name,
+                "args": args,
+                "result": result
+            })
+        return results
+    
+    def chat(self, user_id: int, message: str, max_iterations: int = 5) -> str:
+        """
+        Handle chat message with tool execution loop
+        """
+        conversation = self._get_conversation(user_id)
+        
+        # Add user message
+        conversation.append({"role": "user", "content": message})
+        
+        # Agentic loop (allow multiple tool calls)
+        for iteration in range(max_iterations):
+            try:
+                # Call vLLM
+                response = self.vllm.chat_completion(conversation)
+                assistant_message = self.vllm.extract_message(response)
+                
+                # Check for tool calls (text-based parsing)
+                tool_calls = self._parse_tool_calls(assistant_message)
+                
+                if not tool_calls:
+                    # No tool calls - return response
+                    conversation.append({"role": "assistant", "content": assistant_message})
+                    return assistant_message
+                
+                # Execute tools
+                tool_results = self._execute_tools(tool_calls)
+                
+                # Build tool result message
+                result_lines = []
+                result_lines.append("Tool execution results:")
+                result_lines.append("")
+                for i, tr in enumerate(tool_results, 1):
+                    result_lines.append(f"**{i}. {tr['name']}**")
+                    result_lines.append(f"Args: {json.dumps(tr['args'])}")
+                    if "error" in tr["result"]:
+                        result_lines.append(f"Error: {tr['result']['error']}")
+                    else:
+                        result_lines.append(f"Result: {tr['result'].get('result', str(tr['result']))}")
+                    result_lines.append("")
+                
+                tool_result_text = "\n".join(result_lines)
+                
+                # Add assistant message + tool results to conversation
+                conversation.append({"role": "assistant", "content": assistant_message})
+                conversation.append({"role": "user", "content": tool_result_text})
+                
+                # Continue loop for next iteration
+                
+            except Exception as e:
+                error_msg = f"Error: {str(e)}"
+                conversation.append({"role": "assistant", "content": error_msg})
+                return error_msg
+        
+        # Max iterations reached
+        final_msg = "Reached maximum tool execution iterations. Please try a simpler request."
+        conversation.append({"role": "assistant", "content": final_msg})
+        return final_msg
+    
+    def reset_conversation(self, user_id: int):
+        """
+        Reset conversation history for user
+        """
+        if user_id in self.conversations:
+            del self.conversations[user_id]
