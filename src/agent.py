@@ -83,18 +83,68 @@ class Agent:
         tool_calls = []
         
         # Match: TOOL_CALL: { ... }
-        pattern = r'TOOL_CALL:\s*(\{[^}]+\})'
+        # Use more flexible pattern to handle nested objects and multiline JSON
+        pattern = r'TOOL_CALL:\s*(\{(?:[^{}]|\{[^{}]*\})*\})'
         matches = re.finditer(pattern, text, re.DOTALL)
         
         for match in matches:
             try:
-                tool_call = json.loads(match.group(1))
+                json_str = match.group(1)
+                tool_call = json.loads(json_str)
                 if "name" in tool_call and "args" in tool_call:
                     tool_calls.append(tool_call)
             except json.JSONDecodeError:
-                continue
+                # Try to extract with simple brace matching
+                try:
+                    tool_call = self._extract_json_object(text, match.start(1))
+                    if tool_call and "name" in tool_call and "args" in tool_call:
+                        tool_calls.append(tool_call)
+                except:
+                    continue
         
         return tool_calls
+    
+    def _extract_json_object(self, text: str, start: int) -> Optional[Dict[str, Any]]:
+        """
+        Extract JSON object using brace counting (more robust)
+        """
+        if start >= len(text) or text[start] != '{':
+            return None
+        
+        brace_count = 0
+        in_string = False
+        escape = False
+        
+        for i in range(start, len(text)):
+            char = text[i]
+            
+            if escape:
+                escape = False
+                continue
+            
+            if char == '\\':
+                escape = True
+                continue
+            
+            if char == '"':
+                in_string = not in_string
+                continue
+            
+            if in_string:
+                continue
+            
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    json_str = text[start:i+1]
+                    try:
+                        return json.loads(json_str)
+                    except json.JSONDecodeError:
+                        return None
+        
+        return None
     
     def _execute_tools(self, tool_calls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -112,7 +162,7 @@ class Agent:
             })
         return results
     
-    def chat(self, user_id: int, message: str, max_iterations: int = 5) -> str:
+    def chat(self, user_id: int, message: str, max_iterations: int = 5, debug: bool = False) -> str:
         """
         Handle chat message with tool execution loop
         """
@@ -130,6 +180,12 @@ class Agent:
                 
                 # Check for tool calls (text-based parsing)
                 tool_calls = self._parse_tool_calls(assistant_message)
+                
+                if debug:
+                    print(f"\n[DEBUG] Iteration {iteration + 1}")
+                    print(f"[DEBUG] Tool calls found: {len(tool_calls)}")
+                    if tool_calls:
+                        print(f"[DEBUG] Tool calls: {tool_calls}")
                 
                 if not tool_calls:
                     # No tool calls - return response

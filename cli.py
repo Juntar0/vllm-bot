@@ -9,9 +9,10 @@ from src.agent import Agent
 
 
 class CLIBot:
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: Agent, debug: bool = False):
         self.agent = agent
         self.user_id = 1  # Fixed user ID for CLI
+        self.debug = debug
         
     def print_welcome(self):
         """
@@ -85,7 +86,7 @@ class CLIBot:
                 print()
                 print("Bot: ", end="", flush=True)
                 
-                response = self.agent.chat(self.user_id, user_input)
+                response = self.agent.chat(self.user_id, user_input, debug=self.debug)
                 print(response)
                 print()
                 
@@ -185,7 +186,14 @@ def main():
     
     # Create and run CLI bot
     print("✅ Ready!\n")
-    bot = CLIBot(agent)
+    
+    # Check for debug mode
+    import os
+    debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+    if debug:
+        print("🐛 Debug mode enabled\n")
+    
+    bot = CLIBot(agent, debug=debug)
     bot.run()
 
 
