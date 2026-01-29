@@ -10,7 +10,8 @@
       "gpt-oss-medium",
       "gpt-oss-high"
     ],
-    "default_model_index": 1
+    "default_model_index": 1,
+    "enable_function_calling": true
   },
   
   "telegram": {

@@ -15,6 +15,7 @@ class Agent:
         self.tools = ToolExecutor(workspace_config["dir"], security_config)
         self.system_prompt_config = system_prompt_config
         self.workspace_dir = workspace_config["dir"]
+        self.enable_function_calling = vllm_config.get("enable_function_calling", True)
         
         # Conversation history per user
         self.conversations: Dict[int, List[Dict[str, str]]] = {}
@@ -35,15 +36,30 @@ class Agent:
             lines.append(workspace_note.format(workspace_dir=self.workspace_dir))
             lines.append("")
         
-        # Tools
+        # Tools - Generate from TOOL_DEFINITIONS dynamically
         tools_note = self.system_prompt_config.get("tools_note", "")
         if tools_note:
             lines.append("## Available Tools")
             lines.append("")
-            lines.append("- **read(path, offset?, limit?)**: Read file contents")
-            lines.append("- **write(path, content)**: Write or create a file")
-            lines.append("- **edit(path, oldText, newText)**: Edit file by replacing exact text")
-            lines.append("- **exec(command)**: Execute shell command")
+            
+            # Generate tool descriptions from TOOL_DEFINITIONS
+            for tool_def in TOOL_DEFINITIONS:
+                func = tool_def["function"]
+                name = func["name"]
+                desc = func["description"]
+                params = func["parameters"]["properties"]
+                required = func["parameters"].get("required", [])
+                
+                # Build parameter list
+                param_list = []
+                for param_name, param_info in params.items():
+                    is_required = param_name in required
+                    param_str = param_name if is_required else f"{param_name}?"
+                    param_list.append(param_str)
+                
+                # Format: - **tool_name(param1, param2?)**: Description
+                lines.append(f"- **{name}({', '.join(param_list)})**: {desc}")
+            
             lines.append("")
             lines.append("## Tool Call Format")
             lines.append("")
@@ -174,9 +190,30 @@ class Agent:
         # Agentic loop (allow multiple tool calls)
         for iteration in range(max_iterations):
             try:
-                # Call vLLM
-                response = self.vllm.chat_completion(conversation)
+                # Call vLLM (with tools if function calling enabled)
+                tools_param = TOOL_DEFINITIONS if self.enable_function_calling else None
+                response = self.vllm.chat_completion(conversation, tools=tools_param)
                 assistant_message = self.vllm.extract_message(response)
+                
+                # Check if model returned function calls (OpenAI format)
+                if self.enable_function_calling:
+                    function_tool_calls = self.vllm.extract_tool_calls(response)
+                    if function_tool_calls:
+                        # Model used native function calling, convert to our format
+                        tool_calls = []
+                        for fc in function_tool_calls:
+                            tool_calls.append({
+                                "name": fc["function"]["name"],
+                                "args": json.loads(fc["function"]["arguments"])
+                            })
+                        if debug:
+                            print(f"[DEBUG] Function calling format detected: {len(tool_calls)} calls")
+                    else:
+                        # Fallback to text-based parsing
+                        tool_calls = self._parse_tool_calls(assistant_message)
+                else:
+                    # Function calling disabled, use text-based parsing only
+                    tool_calls = self._parse_tool_calls(assistant_message)
                 
                 # Check for tool calls (text-based parsing)
                 tool_calls = self._parse_tool_calls(assistant_message)

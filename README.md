@@ -249,6 +249,61 @@ TOOL_CALL: {
 }
 ```
 
+## ツール統合
+
+### vLLMにツールを知らせる方法
+
+このボットは**2つの方法**でモデルにツールの存在を伝えます：
+
+#### 1. Function Calling API（推奨）
+
+vLLM APIにツール定義を送信：
+
+```json
+POST /v1/chat/completions
+{
+  "model": "gpt-oss-medium",
+  "messages": [...],
+  "tools": [
+    {"type": "function", "function": {"name": "read", ...}},
+    {"type": "function", "function": {"name": "write", ...}},
+    ...
+  ]
+}
+```
+
+**有効化**（デフォルト）:
+```json
+{
+  "vllm": {
+    "enable_function_calling": true
+  }
+}
+```
+
+#### 2. System Prompt（フォールバック）
+
+Function Calling非対応モデル用。システムプロンプトにツール説明を含めます。
+
+**無効化**:
+```json
+{
+  "vllm": {
+    "enable_function_calling": false
+  }
+}
+```
+
+### ツール定義の場所
+
+すべてのツールは `src/tools.py` の `TOOL_DEFINITIONS` で定義されます。
+
+新しいツールを追加すると、自動的に：
+- vLLM API に送信される
+- システムプロンプトに追加される
+
+詳細は `TOOLS.md` を参照してください。
+
 ## セキュリティ
 
 ### コマンドallowlist

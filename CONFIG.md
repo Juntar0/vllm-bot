@@ -134,6 +134,32 @@
 }
 ```
 
+### enable_function_calling
+
+**型**: `boolean`  
+**必須**: いいえ  
+**デフォルト**: `true`  
+**説明**: Function Calling API（OpenAI互換）を使用するか
+
+```json
+{
+  "vllm": {
+    "enable_function_calling": true  // Function Calling使用
+  }
+}
+```
+
+**`true`の場合**:
+- vLLM APIに`tools`パラメータを送信
+- モデルが構造化された`tool_calls`を返す
+- フォールバックでテキストパースも実行
+
+**`false`の場合**:
+- システムプロンプトのみでツール説明
+- テキストベースの`TOOL_CALL: {...}`形式を使用
+
+詳細は `TOOLS.md` を参照。
+
 ---
 
 ## Workspace設定
