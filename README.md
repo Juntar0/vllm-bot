@@ -314,6 +314,40 @@ TOOL_CALL: {
 }
 ```
 
+## デバッグ
+
+### デバッグモードの有効化
+
+ツールが正しく検出・実行されているか確認：
+
+```bash
+DEBUG=1 python cli.py
+```
+
+**デバッグ出力例**:
+```
+You: ワークスペースにあるファイルをリストして
+
+Bot: TOOL_CALL: { "name": "exec", "args": { "command": "ls" } }
+
+[DEBUG] Iteration 1
+[DEBUG] Tool calls found: 1
+[DEBUG] Tool calls: [{'name': 'exec', 'args': {'command': 'ls'}}]
+
+Tool execution results:
+...
+```
+
+### ツールパーサーのテスト
+
+```bash
+python3 test_tool_parsing.py
+```
+
+様々な形式のツール呼び出しをテストできます。
+
+詳細は `DEBUGGING.md` を参照してください。
+
 ## トラブルシューティング
 
 ### vLLM接続エラー
