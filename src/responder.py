@@ -38,7 +38,8 @@ class Responder(VLLMProvider):
         config: Dict[str, Any],
         memory: Memory,
         state: AgentState,
-        audit_log: Optional[AuditLog] = None
+        audit_log: Optional[AuditLog] = None,
+        debugger = None
     ):
         """
         Initialize Responder
@@ -48,8 +49,9 @@ class Responder(VLLMProvider):
             memory: Memory instance
             state: AgentState instance
             audit_log: Optional AuditLog instance
+            debugger: Optional Debugger instance
         """
-        super().__init__(config)
+        super().__init__(config, debugger)
         
         self.memory = memory
         self.state = state

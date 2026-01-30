@@ -80,7 +80,8 @@ class Agent:
             config=config.get('vllm', {}),
             memory=self.memory,
             state=self.state,
-            audit_log=self.audit_log
+            audit_log=self.audit_log,
+            debugger=self.debugger
         )
         
         # Responder
@@ -88,7 +89,8 @@ class Agent:
             config=config.get('vllm', {}),
             memory=self.memory,
             state=self.state,
-            audit_log=self.audit_log
+            audit_log=self.audit_log,
+            debugger=self.debugger
         )
         
         # Agent loop
