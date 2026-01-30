@@ -156,6 +156,7 @@ if [ ! -f config/config.json ]; then
   "debug": {
     "enabled": $debug_enabled,
     "level": "basic",
+    "log_file": "./data/debug.log",
     "show_planner": true,
     "show_tool_runner": true,
     "show_responder": true,
