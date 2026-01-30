@@ -40,6 +40,7 @@ class AgentLoop:
         state: AgentState,
         memory: Memory,
         audit_log: Optional[AuditLog] = None,
+        debugger=None,
         max_loops: int = 5,
         loop_wait_sec: float = 0.5
     ):
@@ -63,6 +64,7 @@ class AgentLoop:
         self.state = state
         self.memory = memory
         self.audit_log = audit_log
+        self.debugger = debugger
         self.max_loops = max_loops
         self.loop_wait_sec = loop_wait_sec
     
@@ -80,9 +82,15 @@ class AgentLoop:
         # Reset state for new conversation
         self.state.reset(user_request)
         
+        if self.debugger:
+            self.debugger.print("AGENT_LOOP", f"Starting agent execution")
+        
         # Start loop iterations
         for loop_id in range(1, self.max_loops + 1):
             try:
+                if self.debugger:
+                    self.debugger.loop_start(loop_id, user_request)
+                
                 self.state.start_loop(loop_id)
                 
                 # Step 1: Planner - Decide what to do
@@ -103,7 +111,12 @@ class AgentLoop:
                 
                 # Step 5: Check if we should stop
                 if self._should_stop(plan, responder_output):
+                    if self.debugger:
+                        self.debugger.loop_end(loop_id, "Stop condition met")
                     return responder_output.response
+                
+                if self.debugger:
+                    self.debugger.loop_end(loop_id, "Continue to next loop")
                 
                 # Wait before next loop (rate limiting)
                 if loop_id < self.max_loops:
@@ -111,6 +124,9 @@ class AgentLoop:
             
             except Exception as e:
                 error_msg = f"Error in loop {loop_id}: {str(e)}"
+                
+                if self.debugger:
+                    self.debugger.execution_error(error_msg)
                 
                 if self.audit_log:
                     self.audit_log.log_error(
@@ -124,6 +140,9 @@ class AgentLoop:
                 return self._handle_error(error_msg, loop_id)
         
         # Reached max loops
+        if self.debugger:
+            self.debugger.print("AGENT_LOOP", f"Max loops ({self.max_loops}) reached")
+        
         return self._final_response_on_limit()
     
     def _execute_planner_step(self, user_request: str) -> 'PlannerOutput':
@@ -137,7 +156,19 @@ class AgentLoop:
             PlannerOutput object
         """
         
+        if self.debugger:
+            self.debugger.planner_input(user_request, self.state.facts, self.state.remaining_tasks)
+        
         plan = self.planner.plan(user_request)
+        
+        if self.debugger:
+            self.debugger.planner_output({
+                'need_tools': plan.need_tools,
+                'tool_calls': [{'tool_name': tc.get('tool_name'), 'args': tc.get('args')} 
+                               for tc in plan.tool_calls] if plan.tool_calls else [],
+                'reason_brief': plan.reason_brief,
+                'stop_condition': plan.stop_condition
+            })
         
         # Record in state
         self.state.add_planner_output(plan)
@@ -159,14 +190,28 @@ class AgentLoop:
         tool_results = []
         
         if plan.need_tools and plan.tool_calls:
+            if self.debugger:
+                self.debugger.print("TOOL_RUNNER", f"Executing {len(plan.tool_calls)} tool(s)")
+            
             # Execute the tools
             tool_results = self.tool_runner.execute_calls(
                 plan.tool_calls,
                 loop_id
             )
             
+            if self.debugger:
+                for result in tool_results:
+                    self.debugger.tool_end(
+                        result.tool_name,
+                        result.success,
+                        len(result.output) if result.output else 0
+                    )
+            
             # Record in state
             self.state.add_tool_results(tool_results)
+        else:
+            if self.debugger:
+                self.debugger.print("TOOL_RUNNER", "No tools to execute")
         
         return tool_results
     
@@ -188,11 +233,17 @@ class AgentLoop:
             ResponderOutput object
         """
         
+        if self.debugger:
+            self.debugger.responder_input(user_request, len(tool_results))
+        
         responder_output = self.responder.respond(
             user_request,
             tool_results,
             loop_id
         )
+        
+        if self.debugger:
+            self.debugger.responder_output(responder_output.response, responder_output.is_final_answer)
         
         return responder_output
     

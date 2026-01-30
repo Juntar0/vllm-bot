@@ -12,6 +12,7 @@ from src.tool_runner import ToolRunner
 from src.planner import Planner
 from src.responder import Responder
 from src.agent_loop import AgentLoop
+from src.debugger import Debugger, DebugConfig
 
 
 class Agent:
@@ -42,6 +43,9 @@ class Agent:
         """
         
         self.config = config
+        
+        # Initialize debugger
+        self.debugger = DebugConfig.from_dict(config)
         
         # Initialize components
         self.memory = Memory(
@@ -95,6 +99,7 @@ class Agent:
             state=self.state,
             memory=self.memory,
             audit_log=self.audit_log,
+            debugger=self.debugger,
             max_loops=agent_config.get('max_loops', 5),
             loop_wait_sec=agent_config.get('loop_wait_sec', 0.5)
         )
@@ -110,7 +115,11 @@ class Agent:
             Final response from the agent
         """
         
-        return self.agent_loop.run(user_request)
+        self.debugger.print("AGENT", f"User input: {user_request}")
+        response = self.agent_loop.run(user_request)
+        self.debugger.print("AGENT", f"Final output generated")
+        
+        return response
     
     def get_summary(self) -> Dict[str, Any]:
         """
