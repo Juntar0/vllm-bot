@@ -297,7 +297,14 @@ Output your JSON response:
         try:
             data = json.loads(json_str)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON from Planner: {e}\nResponse: {response[:500]}")
+            # Detailed error message for debugging
+            error_msg = f"Invalid JSON from Planner: {e}\nResponse: {response[:500]}"
+            if self.debugger:
+                self.debugger.print("PLANNER", f"--- JSON Parse Error ---")
+                self.debugger.print("PLANNER", f"Error: {str(e)}")
+                self.debugger.print("PLANNER", f"Raw response: {response[:500]}")
+                self.debugger.print("PLANNER", f"Extracted JSON: {json_str[:200]}")
+            raise ValueError(error_msg)
         
         # Validate required fields
         if 'need_tools' not in data:

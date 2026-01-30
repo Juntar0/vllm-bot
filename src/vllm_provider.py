@@ -64,27 +64,52 @@ class VLLMProvider:
             if stream:
                 result = self._handle_stream(response)
             else:
-                result = response.json()
+                try:
+                    result = response.json()
+                except Exception as json_err:
+                    # Debug: Show raw response on JSON parse error
+                    if self.debugger:
+                        self.debugger.print("VLLM_API", f"--- API Response (Raw) ---")
+                        self.debugger.print("VLLM_API", f"Status Code: {response.status_code}")
+                        self.debugger.print("VLLM_API", f"Content: {response.text[:500]}")
+                    raise Exception(f"Failed to parse API response as JSON: {str(json_err)}")
             
             # Debug: Show API response
             if self.debugger:
                 self.debugger.print("VLLM_API", f"--- API Response ---")
-                if isinstance(result, dict) and "choices" in result:
-                    choices = result.get("choices", [])
-                    if choices:
-                        choice = choices[0]
-                        finish_reason = choice.get("finish_reason", "unknown")
-                        message = choice.get("message", {})
-                        content = message.get("content", "")
-                        content_preview = content[:150] + "..." if len(content) > 150 else content
-                        self.debugger.print("VLLM_API", f"Finish Reason: {finish_reason}")
-                        self.debugger.print("VLLM_API", f"Response: {content_preview}")
+                if isinstance(result, dict):
+                    if "error" in result:
+                        # Error response
+                        error = result.get("error", {})
+                        self.debugger.print("VLLM_API", f"✗ Error Response:")
+                        self.debugger.print("VLLM_API", f"  Message: {error.get('message', 'unknown')}")
+                        self.debugger.print("VLLM_API", f"  Type: {error.get('type', 'unknown')}")
+                        self.debugger.print("VLLM_API", f"  Code: {error.get('code', 'unknown')}")
+                    elif "choices" in result:
+                        # Success response
+                        choices = result.get("choices", [])
+                        if choices:
+                            choice = choices[0]
+                            finish_reason = choice.get("finish_reason", "unknown")
+                            message = choice.get("message", {})
+                            content = message.get("content", "")
+                            content_preview = content[:150] + "..." if len(content) > 150 else content
+                            self.debugger.print("VLLM_API", f"Finish Reason: {finish_reason}")
+                            self.debugger.print("VLLM_API", f"Response: {content_preview}")
+                    else:
+                        # Unknown response format
+                        self.debugger.print("VLLM_API", f"Unknown response format:")
+                        self.debugger.print("VLLM_API", f"  Keys: {list(result.keys())}")
+                        self.debugger.print("VLLM_API", f"  Content: {str(result)[:200]}")
             
             return result
                 
         except requests.RequestException as e:
             if self.debugger:
-                self.debugger.print("VLLM_API", f"✗ Error: {str(e)}")
+                self.debugger.print("VLLM_API", f"--- API Request Error ---")
+                self.debugger.print("VLLM_API", f"✗ Connection Error: {str(e)}")
+                if hasattr(e.response, 'text'):
+                    self.debugger.print("VLLM_API", f"Response: {e.response.text[:300]}")
             raise Exception(f"vLLM API error: {str(e)}")
     
     def _handle_stream(self, response) -> Iterator[Dict[str, Any]]:
