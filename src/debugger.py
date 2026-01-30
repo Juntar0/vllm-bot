@@ -56,14 +56,15 @@ class Debugger:
             return
         
         try:
-            with open(self.log_file, 'a') as f:
+            with open(self.log_file, 'a', encoding='utf-8') as f:
                 timestamp = datetime.now().isoformat()
                 f.write(f"[{timestamp}] [{section}] {message}\n")
                 if full_detail:
                     f.write(f"  FULL_DETAIL:\n")
-                    for line in full_detail.split('\n'):
-                        f.write(f"    {line}\n")
+                    # Write JSON directly without line-by-line splitting to preserve formatting
+                    f.write(f"    {full_detail}\n")
                 f.write("\n")
+                f.flush()  # Force write to disk immediately
         except Exception as e:
             print(f"Warning: Failed to write to log file: {e}")
     
