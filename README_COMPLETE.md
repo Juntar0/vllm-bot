@@ -148,43 +148,34 @@ cp config/config.full.json config/my_config.json
 
 ### Configuration
 
-Edit `config/my_config.json`:
+Edit `config/config.json` to customize:
 
 ```json
 {
-  "vllm": {
-    "base_url": "http://localhost:8000/v1",
-    "model": "gpt-oss-medium",
-    "temperature": 0.0,
-    "max_tokens": 2048
-  },
-  "workspace": {
-    "dir": "./workspace"
-  },
-  "security": {
-    "exec_enabled": true,
+  "vllm": { "base_url": "...", "model": "...", ... },
+  "workspace": { "dir": "./workspace" },
+  "security": { 
     "allowed_commands": ["ls", "cat", "grep", "find"],
     "timeout_sec": 30
   },
-  "agent": {
-    "max_loops": 5,
-    "loop_wait_sec": 0.5
-  }
+  "agent": { "max_loops": 5, ... }
 }
 ```
+
+See `CONFIG.md` for all options and examples.
 
 ---
 
 ## Usage
 
-### Command Line
+### Command Line (simplest)
 
 ```bash
-# Basic usage
-python3 cli_integrated.py "List all Python files"
+# 1. Edit config once
+vi config/config.json
 
-# With custom config
-python3 cli_integrated.py "Find and count lines" config/my_config.json
+# 2. Run (uses config.json automatically)
+python3 cli_integrated.py "List all Python files"
 ```
 
 ### Python API
@@ -193,21 +184,10 @@ python3 cli_integrated.py "Find and count lines" config/my_config.json
 from src.agent import Agent
 import json
 
-# Load config
-with open('config/config.full.json') as f:
-    config = json.load(f)
-
-# Create agent
+config = json.load(open('config/config.json'))
 agent = Agent(config)
-
-# Run request
 response = agent.run("Find all text files")
-print(response)
-
-# Get summary
 agent.print_summary()
-
-# Save memory for next session
 agent.save_memory()
 ```
 
@@ -255,28 +235,21 @@ If yes → Return response to user
 
 ## Security Features
 
-### Path Protection
-```python
-# ✓ Allowed
-workspace/file.txt
-workspace/subdir/data.json
+### 3-Layer Protection
+1. **Path Restriction** - Blocks `../` and absolute paths
+2. **Command Allowlist** - Whitelist mode (edit in config.json)
+3. **Resource Limits** - Timeout (30s) and output size (200KB max)
 
-# ✗ Blocked
-../../../etc/passwd
-/etc/passwd
-workspace/../etc/passwd
-```
-
-### Command Allowlist
+### Configure in config.json
 ```json
-"allowed_commands": ["ls", "cat", "grep", "find"]
+"workspace": { "dir": "./workspace" },  // or "/" for system access
+"security": {
+  "allowed_commands": ["ls", "cat", "grep", "find"],  // or [] for all
+  "timeout_sec": 30
+}
 ```
-Only commands in this list can be executed.
 
-### Resource Limits
-- Timeout: 30 seconds per command
-- Output: 200,000 characters max
-- Auto-truncated if exceeded
+See `CONFIG.md` for more details.
 
 ---
 
@@ -320,8 +293,7 @@ vllm-bot/
 │   ├── agent.py            (Integrated agent)
 │   └── vllm_provider.py    (vLLM API wrapper)
 ├── config/
-│   ├── config.full.json    (Complete config)
-│   └── config.example.json (Example config)
+│   └── config.json         (Single unified config)
 ├── tests/
 │   ├── test_phase1_modules.py
 │   ├── test_planner.py
