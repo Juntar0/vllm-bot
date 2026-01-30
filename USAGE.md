@@ -1,57 +1,13 @@
 # ユーザインタラクション - USAGE.md
 
-## 現在の対話方法
+## 対話型インタフェース（実装済み）
 
-### 方法1: ワンショット CLI（現在の実装）
+複数の質問を順番に処理できます。
 
-**1回のリクエストで完全に完結**
-
-```bash
-python3 cli_integrated.py "command"
-```
-
-**流れ**:
-```
-ユーザ入力
-  ↓
-[エージェント処理]
-├─ Loop 1: Planner → Tools → Responder
-├─ Loop 2: (必要なら)
-├─ Loop 3: (必要なら)
-└─ Loop N: (最大5ループ)
-  ↓
-最終結果を表示
-  ↓
-終了
-```
-
-**特徴**:
-- ✅ シンプル、わかりやすい
-- ✅ 複数ツール呼び出しを自動処理
-- ✅ 1つのコマンドで完結
-- ❌ 対話不可（1リクエスト1レスポンス）
-- ❌ 複数回の質問には向かない
-
-**例**:
-```bash
-$ python3 cli_integrated.py "Find all Python files and count them"
-
-[処理中...複数ループで自動的にツールを実行...]
-
-Found 42 Python files in workspace
-Total lines: 15,420
-```
-
----
-
-## 将来の対話方法（未実装）
-
-### 方法2: 対話型 CLI（推奨案）
-
-**複数の質問を順番に処理**
+### 基本的な使用方法
 
 ```bash
-python3 cli_interactive.py
+$ python3 cli.py
 
 > Find Python files
 Found 42 Python files
@@ -59,233 +15,360 @@ Found 42 Python files
 > Count total lines
 15,420 lines of code
 
-> Show duplicates
-3 duplicate functions found
+> List files by size
+Top 5 largest:
+1. main.py: 2,340 lines
+2. utils.py: 1,560 lines
+3. config.py: 1,245 lines
+...
 
 > exit
-```
-
-**利点**:
-- ✅ 会話形式での対話
-- ✅ 前の回答を context として使用
-- ✅ メモリ（long-term memory）を活用
-- ✅ 段階的に情報を積み重ねられる
-
-**構造** (未実装):
-```python
-class InteractiveAgent:
-    def __init__(self):
-        self.agent = Agent(config)
-        self.conversation_history = []
-    
-    def chat(self, user_input):
-        # 過去のメッセージを context に含める
-        response = self.agent.run(user_input)
-        self.conversation_history.append({
-            "user": user_input,
-            "agent": response
-        })
-        return response
+Goodbye! 👋
 ```
 
 ---
 
-### 方法3: 複数ユーザ対話（未実装）
+## 会話フロー
 
-Telegram/Discord/Slack ボット
+### ユーザの視点
 
 ```
-Telegram: @vllm_bot
-
-User: Find Python files
-Bot: Found 42 Python files
-
-User: Count lines
-Bot: 15,420 lines
-
-User: Show largest file
-Bot: main.py - 2,340 lines
+ユーザ入力
+  ↓
+エージェント処理
+  ↓
+エージェント出力
+  ↓
+ユーザ入力（次の質問）
+  ↓
+...
 ```
 
----
+### エージェント内での自動処理
 
-## 推奨される利用シーン
-
-### シーン1: 単一タスク実行（現在推奨）
-
-```bash
-# ✅ ワンショット CLI で OK
-python3 cli_integrated.py "Analyze log files and find errors"
-```
-
-### シーン2: 複数関連タスク（現在は非効率）
-
-```bash
-# ❌ 現在は複数回の CLI 実行が必要
-python3 cli_integrated.py "Find Python files"
-python3 cli_integrated.py "Count total lines in those files"
-python3 cli_integrated.py "List files by size"
-
-# ✅ 将来は対話型 CLI で改善予定
-python3 cli_interactive.py
-> Find Python files
-> Count total lines
-> List files by size
-```
-
-### シーン3: 複雑な依存関係のあるタスク
-
-```bash
-# 各ステップの結果が次のステップに影響
-> Find config files
-> Parse YAML structure
-> Extract database credentials
-> Validate connection
-> Generate migration script
-```
-
----
-
-## 現在のユーザインタラクション方式
-
-### 入力: ユーザリクエスト
-
-```bash
-python3 cli_integrated.py "Find Python files with more than 1000 lines"
-```
-
-### 内部処理: 複数ループでの自動対話
-
-エージェント内では複数ループで自動的に対話しています：
+ユーザが見えないところで、複数ループで自動的に処理：
 
 ```
 Loop 1:
-  Planner: "Need to find Python files"
-  Tools: find *.py → [list of files]
-  Responder: "Found 42 Python files"
+  🧠 Planner: "ファイルを見つける必要がある"
+  🔨 Tools: find *.py → [ファイルリスト]
+  💬 Responder: "42 個のファイルが見つかりました"
 
-Loop 2:
-  Planner: "Need to check file sizes"
-  Tools: wc -l [files] → [line counts]
-  Responder: "5 files have >1000 lines"
-
-Loop 3:
-  Planner: "Task complete"
-  Tools: (none)
-  Responder: "Final answer ready"
-  STOP
-```
-
-### 出力: 最終結果
-
-```
-Found 5 Python files with more than 1000 lines:
-- main.py: 2,340 lines
-- utils.py: 1,560 lines
-- config.py: 1,245 lines
-- ...
+Loop 2（同じリクエスト内）:
+  🧠 Planner: "タスク完了、ツール不要"
+  🔨 Tools: (なし)
+  💬 Responder: "最終回答の準備完了"
+  ⛔ STOP
 ```
 
 ---
 
-## ユーザの視点
+## 対話型のメリット
 
-### 現在（ワンショット CLI）
-
-```
-ユーザの労力: 最小
-複雑度: シンプル
-
-$ python3 cli_integrated.py "Find Python files"
-✓ 結果を得る
-```
-
-### 将来（対話型）
-
-```
-ユーザの労力: 中程度
-複雑度: 自然言語対話
-
-$ python3 cli_interactive.py
-> Find Python files
-✓ 結果を得る
-> Count lines
-✓ 結果を得る
-> Find largest
-✓ 結果を得る
-> exit
-```
-
----
-
-## デバッグ時の対話
-
-デバッグを有効にすると、**エージェント内部での対話が見える**：
+### ✅ シンプル
 
 ```bash
-# config.json
+python3 cli.py
+> 質問
+エージェントの回答
+> 次の質問
+エージェントの回答
+```
+
+### ✅ 自然な会話
+
+```
+> Analyze these files
+Analysis: 42 files found
+
+> Compare with yesterday
+Comparison data: ...
+
+> Generate report
+Report generated
+```
+
+### ✅ コンテキスト保持
+
+```
+> Find large files
+Found 5 files > 1000 lines
+
+> Which one is main.py?
+main.py: 2,340 lines (largest)
+
+> Show its content
+[file content displayed]
+```
+
+前の質問の回答が context として使用されます。
+
+### ✅ 対話中のコマンド
+
+```
+> help                    # ヘルプ表示
+> clear                   # 会話クリア（新規開始）
+> debug on/off            # デバッグ切り替え
+> config                  # 設定表示
+> exit / quit             # 終了
+```
+
+---
+
+## 使用シーン別ガイド
+
+### シーン1: ファイル操作タスク
+
+```
+> List all config files
+Found: config.json, app.conf, settings.yaml
+
+> What's the size of config.json?
+12.5 KB
+
+> Show first 10 lines
+[content shown]
+
+> Find similar files
+Found 3 config files
+```
+
+### シーン2: ログ分析
+
+```
+> Find error logs from today
+Found 3 files with errors
+
+> Count total errors
+1,245 errors
+
+> What are the top error types?
+- ConnectionError: 432
+- TimeoutError: 356
+- ParsingError: 457
+
+> Show errors from last hour
+42 errors in the last hour
+```
+
+### シーン3: コード分析
+
+```
+> Analyze code quality
+42 Python files
+15,420 total lines
+
+> Find files with high complexity
+5 files with high complexity
+
+> What's the largest function?
+calculate_metrics() in main.py: 340 lines
+
+> Suggest refactoring
+Recommended: Split into 3 smaller functions
+```
+
+---
+
+## デバッグ付き対話
+
+```bash
+$ python3 cli.py
+
+> debug on
+✓ Debug enabled
+
+> Find Python files
+[DEBUG PLANNER] Need tools: true
+[DEBUG PLANNER] Tool calls: 1
+[DEBUG PLANNER]   - find(pattern: *.py)
+[DEBUG TOOL_RUNNER] Executing: find
+[DEBUG TOOL_RUNNER] ✓ find completed (42 files)
+[DEBUG RESPONDER] Is final answer: true
+[DEBUG RESPONDER] Response: Found 42 files
+Found 42 Python files
+
+> Count lines
+[DEBUG PLANNER] Need tools: true
+[DEBUG PLANNER] Tool calls: 1
+[DEBUG PLANNER]   - exec_cmd(wc -l)
+[DEBUG TOOL_RUNNER] Executing: exec_cmd
+[DEBUG TOOL_RUNNER] ✓ exec_cmd completed (2048 chars)
+[DEBUG RESPONDER] Response: 15,420 lines
+15,420 lines
+
+> debug off
+✓ Debug disabled
+```
+
+---
+
+## メモリの活用
+
+エージェントは **長期記憶** を持つため、複数回の対話から学習します：
+
+```
+Turn 1:
+> Preferred output format?
+> Recommended: JSON format
+
+Turn 2:
+> Analyze files
+[JSON format で出力]
+
+Turn 3:
+> Compare results
+[JSON format で出力]
+# メモリから "JSON形式が好き" を学習
+```
+
+---
+
+## 会話のリセット
+
+新しい話題に移る場合：
+
+```
+> clear
+✓ Conversation cleared
+
+> Start new task
+[新しい context で開始]
+```
+
+---
+
+## 設定の変更
+
+実行中に設定を変更：
+
+```
+> debug on            # デバッグ有効
+✓ Debug enabled
+
+> debug off           # デバッグ無効
+✓ Debug disabled
+
+> config              # 現在の設定表示
+Current Configuration:
+  Model: gpt-oss-medium
+  Workspace: ./workspace
+  Max loops: 5
+  Debug: false
+```
+
+---
+
+## よくある質問
+
+### Q1: 複数ループって何？
+
+A: エージェントが内部で複数回のプランニング→ツール実行→回答を繰り返すこと。最大 5 回まで。
+
+```
+Loop 1: ファイル一覧取得
+Loop 2: ファイルサイズ計算
+Loop 3: 統計情報集計
+Loop 4: タスク完了確認
+STOP
+```
+
+ユーザは 1 回の質問で、複数のステップが自動的に処理されます。
+
+### Q2: メモリは何を覚えているの？
+
+A: 過去の回答から学習します：
+- ユーザの好みの形式（JSON、テーブル、リスト等）
+- よく使うコマンド
+- 設定の好み
+
+### Q3: 会話履歴は保存される？
+
+A: 実行中のみ保持されます。`exit` で終了すると、次回の起動は新規開始です。
+
+永続的に保存したい場合は、設定ファイルを編集：
+
+```json
 {
-  "debug": { "enabled": true, "level": "basic" }
+  "memory": {
+    "path": "./data/memory.json",
+    "auto_backup": true
+  }
 }
+```
 
-# 実行
-$ python3 cli_integrated.py "Find Python files"
+### Q4: 何回まで質問できる？
 
-[DEBUG PLANNER] Planner: "I need to find Python files"
-  → Tool: find *.py
+A: 無制限です。ただし、`clear` でリセットされるまで、会話履歴が蓄積されます。
 
-[DEBUG TOOL_RUNNER] Executed: find *.py
-  → Result: 42 files
+---
 
-[DEBUG RESPONDER] Responder: "Found 42 Python files"
+## ベストプラクティス
 
-[DEBUG PLANNER] Planner: "Task complete, no more tools needed"
+### ✅ 効果的な質問
 
-[DEBUG RESPONDER] Responder: "Final answer: Found 42 Python files"
-  → STOP
+```
+> Find error logs and count them
+✓ 複合的なリクエスト OK
+
+> Show errors by type with percentages
+✓ 詳細な要求 OK
+```
+
+### ✅ デバッグの活用
+
+```
+> debug on
+> [動作が変な時]
+> debug off
+✓ 問題解決に役立つ
+```
+
+### ✅ 会話のリセット
+
+```
+> clear
+✓ 新しい話題に移る時は clear を実行
 ```
 
 ---
 
 ## 推奨される使用方法
 
-### 今すぐ使う（ワンショット CLI）
+1. **対話型で開始**
+   ```bash
+   python3 cli.py
+   ```
 
-```bash
-# シンプルなタスク実行
-python3 cli_integrated.py "List all config files"
+2. **複数の関連質問をする**
+   ```
+   > Find files
+   > Analyze
+   > Generate report
+   ```
 
-# 複雑なタスク実行（複数ループで自動処理）
-python3 cli_integrated.py "Find and analyze large log files"
+3. **デバッグが必要な場合**
+   ```
+   > debug on
+   > [調査]
+   > debug off
+   ```
 
-# デバッグ付き実行
-# config.json で enabled:true にして
-python3 cli_integrated.py "command"
-```
-
-### 今後の改善案
-
-```bash
-# 対話型 CLI（実装予定）
-python3 cli_interactive.py
-
-# Telegram ボット（実装予定）
-@vllm_agent_bot に話しかける
-
-# Web UI（実装予定）
-http://localhost:8000/ にアクセス
-```
+4. **終了**
+   ```
+   > exit
+   ```
 
 ---
 
 ## まとめ
 
-| 方法 | 実装 | 利用可能 | 用途 |
-|------|------|--------|------|
-| **ワンショット CLI** | ✅ | 今すぐ | 単一タスク |
-| **対話型 CLI** | ❌ | 計画中 | 複数関連タスク |
-| **Telegram ボット** | ❌ | 計画中 | スマートフォン |
-| **Web UI** | ❌ | 計画中 | ブラウザ |
+| 特徴 | 説明 |
+|------|------|
+| **対話型** | > プロンプトで複数質問可 |
+| **自動処理** | 複数ループで自動的に処理 |
+| **メモリ** | 前の回答をコンテキストに使用 |
+| **デバッグ** | 内部処理を可視化可能 |
+| **コマンド** | help/clear/debug/config/exit |
 
-**現在**: ワンショット CLI で十分に機能
-**今後**: 対話型インタフェースを検討予定
+**対話型インタフェースで、効率的に作業できます！** 🎯

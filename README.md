@@ -1,458 +1,306 @@
-# vLLM Bot
+# vLLM Bot - Interactive Agent
 
-**シンプルなAIボット** - vLLM (`v1/chat/completions`) + Telegram統合
+**対話型エージェント** - 複数のターンで会話しながりながらタスクを実行します。
 
-Clawdbotの設計を参考にした最小構成のボット実装。
+```bash
+$ python3 cli.py
 
-## 特徴
+> Find all Python files
+Found 42 Python files in ./workspace
 
-- ✅ vLLM (`v1/chat/completions`) のみ使用
-- ✅ ツール実行（read/write/edit/exec）
-- ✅ Telegram統合
-- ✅ 会話履歴管理
-- ✅ セキュリティ（コマンドallowlist、パストラバーサル防止）
+> Count total lines in them
+15,420 lines of code
 
-## アーキテクチャ
+> Show files larger than 1000 lines
+5 files:
+- main.py: 2,340 lines
+- utils.py: 1,560 lines
+- config.py: 1,245 lines
+- ...
 
-```
-Telegram User
-      ↓
-TelegramBot (telegram_bot.py)
-      ↓
-Agent (agent.py)
-  ├─ VLLMProvider (vllm_provider.py)
-  └─ ToolExecutor (tools.py)
-      ├─ read
-      ├─ write
-      ├─ edit
-      └─ exec
+> exit
+Goodbye! 👋
 ```
 
-### データフロー
+---
 
-```
-User Message
-    ↓
-Agent.chat()
-    ↓
-vLLM API (v1/chat/completions)
-    ↓
-Tool Call検出（テキストパース）
-    ↓
-ToolExecutor.execute()
-    ↓
-結果をconversationに追加
-    ↓
-次のvLLM呼び出し（最大5回）
-    ↓
-最終レスポンス
-```
+## クイックスタート
 
-## セットアップ
-
-### 1. 依存関係インストール
+### 1. セットアップ
 
 ```bash
 cd ~/clawd/vllm-bot
-pip install -r requirements.txt
+mkdir -p workspace data
+
+# config/config.json を確認・編集
+vi config/config.json
 ```
 
-### 2. 設定ファイル作成
+### 2. 実行
 
 ```bash
-cp config/config.example.json config/config.json
+python3 cli.py
 ```
 
-### 3. 設定を編集
+### 3. 対話開始
 
-`config/config.json`:
+```
+> あなたのリクエスト
+エージェントの回答
+
+> 次のリクエスト
+エージェントの回答
+
+> exit
+```
+
+---
+
+## コマンド
+
+対話中に以下が使用できます：
+
+```
+help              - ヘルプを表示
+clear             - 会話履歴をクリア（新規開始）
+debug on/off      - デバッグ出力の切り替え
+config            - 現在の設定を表示
+exit / quit       - 終了
+```
+
+**例**:
+```
+> debug on
+✓ Debug enabled
+
+> Find Python files
+[DEBUG PLANNER] ...
+[DEBUG TOOL_RUNNER] ...
+Found 42 files
+
+> debug off
+✓ Debug disabled
+
+> Count lines
+15,420 lines
+```
+
+---
+
+## 設定 (config/config.json)
 
 ```json
 {
   "vllm": {
     "base_url": "http://localhost:8000/v1",
-    "model": "meta-llama/Llama-2-70b-chat-hf",
-    "api_key": "dummy"
+    "model": "gpt-oss-medium"
   },
-  
-  "telegram": {
-    "token": "YOUR_TELEGRAM_BOT_TOKEN",
-    "allowed_users": [123456789]  // あなたのTelegram user ID
-  }
-}
-```
-
-**Telegram Bot Token取得方法**:
-1. Telegramで [@BotFather](https://t.me/botfather) と会話
-2. `/newbot` コマンドでボット作成
-3. トークンをコピーして設定ファイルに貼り付け
-
-**User ID確認方法**:
-1. [@userinfobot](https://t.me/userinfobot) と会話
-2. あなたのIDが表示される
-
-### 4. vLLMサーバー起動（別ターミナル）
-
-```bash
-# vLLMサーバーが別で動作していることを想定
-# 接続先を config.json の base_url で指定
-```
-
-**モデル設定**:
-
-`config/config.json`でモデルリストを設定：
-```json
-{
-  "vllm": {
-    "available_models": [
-      "gpt-oss-low",
-      "gpt-oss-medium",
-      "gpt-oss-high"
-    ],
-    "default_model_index": 1
-  }
-}
-```
-
-モデルはvLLMサーバー側で提供されているものと一致させる必要があります。
-
-### 5. ボット起動
-
-**CLI版（推奨）**:
-```bash
-python cli.py
-```
-
-**Telegram版**:
-```bash
-python main.py
-```
-
-## 使用方法
-
-### CLI（コマンドライン）で会話 ⭐
-
-```bash
-python cli.py
-```
-
-**起動時の流れ**:
-1. モデル選択（config.jsonの`available_models`から選択）
-2. REPLが起動
-3. メッセージを入力して会話
-
-**コマンド**:
-- `/reset` - 会話履歴リセット
-- `/help` - ヘルプ表示
-- `/exit` - 終了（Ctrl+Cでも可）
-
-**例**:
-```
-You: ワークスペースにあるファイルをリストして
-
-Bot: TOOL_CALL: {
-  "name": "exec",
-  "args": { "command": "ls -la" }
-}
-
-Tool execution results:
-...
-
-Bot: 現在のワークスペースには以下のファイルがあります：
-- README.md
-- cli.py
-- main.py
-```
-
-### Telegramで会話
-
-1. ボットを検索して開始
-2. メッセージを送信
-
-**例**:
-
-```
-You: ワークスペースにあるファイルをリストして
-
-Bot: TOOL_CALL: {
-  "name": "exec",
-  "args": { "command": "ls -la" }
-}
-
-Tool execution results:
-1. exec
-Result: total 32
-drwxr-xr-x 5 user user 4096 ...
-...
-
-現在のワークスペースには以下のファイルがあります：
-- README.md
-- main.py
-- src/
-```
-
-### コマンド
-
-- `/start` - ウェルカムメッセージ
-- `/reset` - 会話履歴リセット
-
-## ツール
-
-### 1. read
-
-ファイル読み取り
-
-```
-TOOL_CALL: {
-  "name": "read",
-  "args": { "path": "README.md" }
-}
-```
-
-### 2. write
-
-ファイル作成・上書き
-
-```
-TOOL_CALL: {
-  "name": "write",
-  "args": {
-    "path": "test.txt",
-    "content": "Hello, World!"
-  }
-}
-```
-
-### 3. edit
-
-ファイル編集（完全一致置換）
-
-```
-TOOL_CALL: {
-  "name": "edit",
-  "args": {
-    "path": "test.txt",
-    "oldText": "Hello",
-    "newText": "Hi"
-  }
-}
-```
-
-### 4. exec
-
-コマンド実行
-
-```
-TOOL_CALL: {
-  "name": "exec",
-  "args": { "command": "ls -la" }
-}
-```
-
-## ツール統合
-
-### vLLMにツールを知らせる方法
-
-このボットは**2つの方法**でモデルにツールの存在を伝えます：
-
-#### 1. Function Calling API（推奨）
-
-vLLM APIにツール定義を送信：
-
-```json
-POST /v1/chat/completions
-{
-  "model": "gpt-oss-medium",
-  "messages": [...],
-  "tools": [
-    {"type": "function", "function": {"name": "read", ...}},
-    {"type": "function", "function": {"name": "write", ...}},
-    ...
-  ]
-}
-```
-
-**有効化**（デフォルト）:
-```json
-{
-  "vllm": {
-    "enable_function_calling": true
-  }
-}
-```
-
-#### 2. System Prompt（フォールバック）
-
-Function Calling非対応モデル用。システムプロンプトにツール説明を含めます。
-
-**無効化**:
-```json
-{
-  "vllm": {
-    "enable_function_calling": false
-  }
-}
-```
-
-### ツール定義の場所
-
-すべてのツールは `src/tools.py` の `TOOL_DEFINITIONS` で定義されます。
-
-新しいツールを追加すると、自動的に：
-- vLLM API に送信される
-- システムプロンプトに追加される
-
-詳細は `TOOLS.md` を参照してください。
-
-## セキュリティ
-
-### コマンドallowlist
-
-`config.json`の`security.allowed_commands`で許可するコマンドを制限：
-
-```json
-{
+  "workspace": {
+    "dir": "./workspace"
+  },
   "security": {
-    "exec_enabled": true,
-    "allowed_commands": [
-      "ls", "cat", "pwd", "echo", "grep", "find"
-    ]
+    "allowed_commands": ["ls", "cat", "grep", "find", "echo", "wc"],
+    "timeout_sec": 30
+  },
+  "debug": {
+    "enabled": false,
+    "level": "basic"
+  },
+  "agent": {
+    "max_loops": 5
   }
 }
 ```
 
-### パストラバーサル防止
+詳細は `CONFIG.md` を参照。
 
-すべてのファイル操作は`workspace_dir`内に制限される。
+---
 
-`../../../etc/passwd`のようなパスは拒否される。
+## デバッグ
 
-### ユーザー制限
+実行中に内部処理を見たい場合：
 
-`telegram.allowed_users`で使用可能なユーザーを制限：
+```
+> debug on
 
-```json
-{
-  "telegram": {
-    "allowed_users": [123456789, 987654321]
-  }
-}
+> Find Python files
+[DEBUG PLANNER] Need tools: true
+[DEBUG PLANNER] Tool calls: 1
+[DEBUG TOOL_RUNNER] Executing: find
+[DEBUG TOOL_RUNNER] ✓ find completed
+[DEBUG RESPONDER] Response: Found 42 files
+
+> debug off
 ```
 
-空の配列 or 未設定 = すべてのユーザーを許可（非推奨）
+詳細は `DEBUG.md` を参照。
 
-## カスタマイズ
+---
 
-### システムプロンプト
+## アーキテクチャ
 
-`config/config.json`の`system_prompt`セクションを編集：
-
-```json
-{
-  "system_prompt": {
-    "role": "You are a coding assistant specialized in Python.",
-    "workspace_note": "Your workspace: {workspace_dir}",
-    "tools_note": "Available tools: read, write, edit, exec"
-  }
-}
+```
+┌──────────────────────────────────┐
+│     Interactive Chat Loop        │
+├──────────────────────────────────┤
+│ User: > Find Python files        │
+│   ↓                              │
+│ [Agent Processing]               │
+│ ├─ Planner (LLM)                 │
+│ ├─ Tool Runner (Host)            │
+│ └─ Responder (LLM)               │
+│   ↓                              │
+│ Agent: Found 42 files            │
+│   ↓                              │
+│ User: > Count lines              │
+│   ↓                              │
+│ [Agent Processing]               │
+│   ↓                              │
+│ Agent: 15,420 lines              │
+│   ↓                              │
+│ User: > exit                     │
+└──────────────────────────────────┘
 ```
 
-### ワークスペース
+---
 
-デフォルトは`./workspace`。変更可能：
+## 機能
+
+### ✅ 実装済み
+
+- **対話型インタフェース** - 複数ターンでの会話
+- **複数ループ処理** - 最大5ループで複雑なタスク対応
+- **セキュリティ** - パス制限、コマンド allowlist
+- **メモリ** - 長期記憶で前の回答を活用
+- **デバッグ** - 内部処理を可視化
+- **設定管理** - JSON ベースの統一設定
+
+### 🔧 ツール
+
+- `list_dir` - ファイル/ディレクトリ一覧
+- `read_file` - ファイル読み込み
+- `write_file` - ファイル作成/上書き
+- `edit_file` - テキスト置換
+- `exec_cmd` - シェルコマンド実行
+- `grep` - ファイル検索
+
+---
+
+## 使用例
+
+### 例1: ファイル操作
+
+```
+> List Python files
+Found 42 Python files
+
+> Count total lines
+15,420 lines
+
+> Find largest file
+main.py: 2,340 lines
+```
+
+### 例2: ログ分析
+
+```
+> Find error logs
+Found 3 error.log files
+
+> Count errors
+127 errors total
+
+> Show errors by type
+- DatabaseError: 45
+- NetworkError: 52
+- TimeoutError: 30
+```
+
+### 例3: デバッグ付き実行
+
+```
+> debug on
+✓ Debug enabled
+
+> Find files
+[DEBUG PLANNER] Need tools: true
+[DEBUG TOOL_RUNNER] Executing: find
+Found 42 files
+
+> debug off
+✓ Debug disabled
+```
+
+---
+
+## 設定値変更
+
+config.json を編集して設定を変更：
 
 ```json
 {
   "workspace": {
-    "dir": "/path/to/your/workspace"
+    "dir": "/"                      // システム全体にアクセス
+  },
+  "security": {
+    "allowed_commands": [],         // すべてのコマンド実行可
+    "timeout_sec": 60               // タイムアウト 60 秒
+  },
+  "debug": {
+    "enabled": true,                // デバッグデフォルト有効
+    "level": "verbose"              // 詳細情報を表示
   }
 }
 ```
 
-## デバッグ
+---
 
-### デバッグモードの有効化
+## ドキュメント
 
-ツールが正しく検出・実行されているか確認：
+| ファイル | 内容 |
+|---------|------|
+| `CONFIG.md` | 設定オプション詳細 |
+| `DEBUG.md` | デバッグシステム詳細 |
+| `USAGE.md` | ユーザインタラクション |
+| `README_COMPLETE.md` | 完全な技術ドキュメント |
 
-```bash
-DEBUG=1 python cli.py
-```
-
-**デバッグ出力例**:
-```
-You: ワークスペースにあるファイルをリストして
-
-Bot: TOOL_CALL: { "name": "exec", "args": { "command": "ls" } }
-
-[DEBUG] Iteration 1
-[DEBUG] Tool calls found: 1
-[DEBUG] Tool calls: [{'name': 'exec', 'args': {'command': 'ls'}}]
-
-Tool execution results:
-...
-```
-
-### ツールパーサーのテスト
-
-```bash
-python3 test_tool_parsing.py
-```
-
-様々な形式のツール呼び出しをテストできます。
-
-詳細は `DEBUGGING.md` を参照してください。
+---
 
 ## トラブルシューティング
 
-### vLLM接続エラー
+### vLLM に接続できない
 
 ```
-Error: vLLM API error: ...
+❌ Error: Failed to connect to vLLM API
+
+対策:
+1. vLLM サーバが起動しているか確認
+2. config.json の base_url を確認
+3. ファイアウォール設定を確認
 ```
 
-**解決策**:
-1. vLLMサーバーが起動しているか確認
-2. `base_url`が正しいか確認
-3. モデル名が正しいか確認
-
-### Telegram接続エラー
+### コマンドが実行されない
 
 ```
-Error: telegram.error.InvalidToken
+❌ Command not allowed: rm
+
+対策:
+config.json の allowed_commands に追加：
+"allowed_commands": ["ls", "cat", "rm"]
 ```
 
-**解決策**:
-1. トークンが正しいか確認
-2. スペースや改行が入っていないか確認
-
-### ツールが動作しない
-
-**Function Calling非対応モデルの場合**:
-
-モデルがfunction callingに対応していない場合、テキストベースのツール呼び出し形式を使用：
-
-```
-TOOL_CALL: { "name": "read", "args": { "path": "file.txt" } }
-```
-
-LLMがこの形式を出力するようにプロンプトで誘導される。
-
-## 開発ログ
-
-このボットは以下の設計原則に基づいて実装：
-
-1. **最小構成**: Clawdbotの複雑さを排除
-2. **vLLM専用**: `v1/chat/completions`のみ使用
-3. **セキュリティファースト**: allowlist、パス検証
-4. **シンプルなルーティング**: user_id → conversation
-
-**参考にしたClawdbotの設計**:
-- 動的システムプロンプト生成
-- ツール抽象化（read/write/edit/exec）
-- サンドボックス（パス検証）
-- 会話履歴管理
+---
 
 ## ライセンス
 
 MIT
+
+---
+
+## サポート
+
+問題が発生した場合：
+
+1. `debug on` で内部処理を確認
+2. `config` で現在の設定を確認
+3. ドキュメントを参照（CONFIG.md, DEBUG.md）
