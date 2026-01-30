@@ -3,7 +3,7 @@
 set -e
 
 echo "==================================="
-echo "vLLM Bot Setup"
+echo "vLLM Bot Setup Wizard"
 echo "==================================="
 echo
 
@@ -31,24 +31,75 @@ mkdir -p data
 mkdir -p config
 echo
 
-# Create config if not exists
+# Interactive config wizard
 if [ ! -f config/config.json ]; then
+    echo "==================================="
+    echo "Configuration Wizard"
+    echo "==================================="
+    echo
+
+    # vLLM settings
+    echo "vLLM Configuration:"
+    read -p "  Base URL [http://localhost:8000/v1]: " vllm_base_url
+    vllm_base_url=${vllm_base_url:-http://localhost:8000/v1}
+    
+    read -p "  Model [gpt-oss-medium]: " vllm_model
+    vllm_model=${vllm_model:-gpt-oss-medium}
+    
+    echo
+
+    # Workspace settings
+    echo "Workspace Configuration:"
+    read -p "  Workspace directory [./workspace]: " workspace_dir
+    workspace_dir=${workspace_dir:-./workspace}
+    
+    echo
+
+    # Security settings
+    echo "Security Configuration:"
+    read -p "  Allow workspace only? (y/n) [y]: " restrict_workspace
+    restrict_workspace=${restrict_workspace:-y}
+    
+    if [[ "$restrict_workspace" =~ ^[Yy]$ ]]; then
+        allowed_commands='["ls", "cat", "grep", "find", "echo", "wc"]'
+    else
+        read -p "  Allowed commands (comma-separated) [ls,cat,grep,find]: " allowed_cmds
+        allowed_cmds=${allowed_cmds:-ls,cat,grep,find}
+        # Convert to JSON array
+        allowed_commands="[\"$(echo $allowed_cmds | sed 's/,/", "/g')\"]"
+    fi
+    
+    echo
+
+    # Debug settings
+    read -p "  Enable debug? (y/n) [n]: " enable_debug
+    enable_debug=${enable_debug:-n}
+    
+    if [[ "$enable_debug" =~ ^[Yy]$ ]]; then
+        debug_enabled="true"
+    else
+        debug_enabled="false"
+    fi
+    
+    echo
+
+    # Create config.json
     echo "✓ Creating config/config.json..."
-    cat > config/config.json << 'EOF'
+    cat > config/config.json << EOF
 {
   "vllm": {
-    "base_url": "http://localhost:8000/v1",
-    "model": "gpt-oss-medium",
+    "base_url": "$vllm_base_url",
+    "model": "$vllm_model",
     "temperature": 0.0,
     "max_tokens": 2048,
     "enable_function_calling": true
   },
   "workspace": {
-    "dir": "./workspace"
+    "dir": "$workspace_dir"
   },
   "security": {
     "exec_enabled": true,
-    "allowed_commands": ["ls", "cat", "grep", "find", "echo", "wc"],
+    "allowed_commands": $allowed_commands,
     "timeout_sec": 30,
     "max_output_size": 200000
   },
@@ -65,7 +116,7 @@ if [ ! -f config/config.json ]; then
     "loop_wait_sec": 0.5
   },
   "debug": {
-    "enabled": false,
+    "enabled": $debug_enabled,
     "level": "basic",
     "show_planner": true,
     "show_tool_runner": true,
@@ -74,6 +125,9 @@ if [ ! -f config/config.json ]; then
   }
 }
 EOF
+    echo
+else
+    echo "✓ config/config.json already exists (skipping wizard)"
     echo
 fi
 
@@ -91,5 +145,9 @@ echo "==================================="
 echo "✓ Setup complete!"
 echo "==================================="
 echo
-echo "Run: ./run.sh"
+echo "Configuration saved:"
+cat config/config.json | venv/bin/python3 -m json.tool | head -20
+echo "..."
+echo
+echo "To run: ./run.sh"
 echo
