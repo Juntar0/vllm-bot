@@ -6,11 +6,10 @@
 
 ```bash
 # セットアップ
-mkdir -p workspace data
-vi config/config.json  # 設定を確認
+./setup.sh
 
 # 実行
-python3 cli.py
+./run.sh
 ```
 
 ## 使用方法
