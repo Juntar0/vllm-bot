@@ -165,15 +165,21 @@ class Debugger:
     def tool_result_detail(self, tool_name: str, result: Dict[str, Any]) -> None:
         """Log complete tool result
         
-        Console: Only shown if verbose mode
-        File: Always logged with full details
+        Console: Preview version (500 chars max for output field only)
+        File: ALWAYS logged with COMPLETE details (no truncation)
         """
+        # Console: show preview if verbose mode
         if self.enabled and self.level == 'verbose':
             self.print("TOOL_RUNNER", f"--- {tool_name} Full Result ---")
-            self.print_dict("TOOL_RUNNER", "Result", result)
-        else:
-            # Not showing in console, but always log to file
-            self.print_dict("TOOL_RUNNER", f"--- {tool_name} Full Result ---", result)
+            console_result = dict(result)
+            if 'output' in console_result and len(console_result['output']) > 500:
+                console_result['output'] = console_result['output'][:500] + '...[TRUNCATED - see log file]'
+            if self.enabled:
+                print(self._format_output("TOOL_RUNNER", f"Result:\n{json.dumps(console_result, indent=2, ensure_ascii=False)}"))
+        
+        # File: ALWAYS log with complete output (never truncated)
+        self._log_to_file("TOOL_RUNNER", f"--- {tool_name} Full Result ---", 
+                         json.dumps(result, indent=2, ensure_ascii=False))
     
     def tool_error(self, tool_name: str, error: str) -> None:
         """Log tool error"""

@@ -144,11 +144,11 @@ class ToolRunner:
                 duration_sec=duration
             )
             
-            # Debug output
+            # Debug output - always log complete output to file
             if self.debugger:
                 self.debugger.tool_result_detail(tool_name, {
                     'success': tool_result.success,
-                    'output': tool_result.output[:500] + '...' if len(tool_result.output) > 500 else tool_result.output,
+                    'output': tool_result.output,  # ← Complete output (no truncation)
                     'error': tool_result.error,
                     'exit_code': tool_result.exit_code,
                     'duration_sec': tool_result.duration_sec,
