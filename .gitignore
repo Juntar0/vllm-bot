@@ -26,3 +26,8 @@ workspace/*
 
 # Logs
 *.log
+
+# Runtime generated files
+data/
+test/test_data/runlog_integration.jsonl
+test/test_data/memory_integration.json
