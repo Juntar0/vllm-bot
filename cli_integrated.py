@@ -14,7 +14,7 @@ def load_config(config_path: str = None) -> dict:
     """Load configuration from JSON file"""
     
     if not config_path:
-        config_path = './config/config.full.json'
+        config_path = './config/config.json'
     
     config_file = Path(config_path)
     
@@ -44,10 +44,12 @@ def main():
     """Main CLI entry point"""
     
     if len(sys.argv) < 2:
-        print("Usage: python3 cli_integrated.py <request> [config_file]")
+        print("Usage: python3 cli_integrated.py <request>")
         print()
         print("Example:")
         print('  python3 cli_integrated.py "List all Python files"')
+        print()
+        print("Configuration: Edit config/config.json to change settings")
         print('  python3 cli_integrated.py "Find and count lines" ./config/custom.json')
         sys.exit(1)
     
@@ -59,7 +61,7 @@ def main():
     # Load config
     print("Loading configuration...")
     config = load_config(config_path)
-    print(f"✓ Loaded config from {config_path or './config/config.full.json'}")
+    print(f"✓ Loaded config from {config_path or './config/config.json'}")
     print()
     
     # Initialize agent
