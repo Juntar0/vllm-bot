@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock, MagicMock
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.agent_loop import AgentLoop
 from src.memory import Memory
@@ -67,7 +67,7 @@ def test_agent_loop_initialization():
     print("\nTest 1: AgentLoop Initialization")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     planner = MockPlanner()
     tool_runner = MockToolRunner()
@@ -94,7 +94,7 @@ def test_agent_loop_single_iteration():
     print("\nTest 2: Single Loop Iteration")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     planner = MockPlanner()
     tool_runner = MockToolRunner()
@@ -121,7 +121,7 @@ def test_agent_loop_multiple_iterations():
     print("\nTest 3: Multiple Loop Iterations")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     planner = MockPlanner()
     tool_runner = MockToolRunner()
@@ -149,7 +149,7 @@ def test_agent_loop_max_loops():
     print("\nTest 4: Max Loop Limit")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     planner = MockPlanner()
     tool_runner = MockToolRunner()
@@ -177,7 +177,7 @@ def test_should_stop_conditions():
     print("\nTest 5: Stop Conditions")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     planner = MockPlanner()
     tool_runner = MockToolRunner()
@@ -234,7 +234,7 @@ def test_execution_summary():
     print("\nTest 6: Execution Summary")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     state.reset("Test task")
     
@@ -267,7 +267,7 @@ def test_error_handling():
     print("\nTest 7: Error Handling")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     
     planner = MockPlanner()
@@ -298,7 +298,7 @@ def test_state_tracking():
     print("\nTest 8: State Tracking")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     
     planner = MockPlanner()
@@ -333,7 +333,7 @@ def test_loop_with_remaining_tasks():
     print("\nTest 9: Remaining Tasks Handling")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     state.reset("Find and process files")
     state.add_task("Find Python files")
@@ -369,7 +369,7 @@ def test_responder_quality_score():
     
     from src.responder import Responder
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     state.reset("Test task")
     

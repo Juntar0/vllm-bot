@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.agent import Agent
 from src.memory import Memory
@@ -28,7 +28,7 @@ def get_test_config():
             'enable_function_calling': True
         },
         'workspace': {
-            'dir': './test_workspace_integration'
+            'dir': './test/test_workspace_integration'
         },
         'security': {
             'exec_enabled': True,
@@ -37,11 +37,11 @@ def get_test_config():
             'max_output_size': 200000
         },
         'memory': {
-            'path': './test_data/memory_integration.json'
+            'path': './test/test_data/memory_integration.json'
         },
         'audit': {
             'enabled': True,
-            'log_path': './test_data/runlog_integration.jsonl'
+            'log_path': './test/test_data/runlog_integration.jsonl'
         },
         'agent': {
             'max_loops': 5,
@@ -52,7 +52,7 @@ def get_test_config():
 
 def setup_test_workspace():
     """Setup test workspace"""
-    workspace = Path('./test_workspace_integration')
+    workspace = Path('./test/test_workspace_integration')
     workspace.mkdir(exist_ok=True)
     (workspace / 'test.txt').write_text('Hello World')
     return workspace
@@ -61,7 +61,7 @@ def setup_test_workspace():
 def cleanup_test_workspace():
     """Cleanup test workspace"""
     import shutil
-    workspace = Path('./test_workspace_integration')
+    workspace = Path('./test/test_workspace_integration')
     if workspace.exists():
         shutil.rmtree(workspace)
 
@@ -189,7 +189,7 @@ def test_tool_execution():
         'content': 'Test output'
     })
     assert result['exit_code'] == 0
-    assert Path('./test_workspace_integration/output.txt').exists()
+    assert Path('./test/test_workspace_integration/output.txt').exists()
     
     print("✅ Tool execution working")
     cleanup_test_workspace()

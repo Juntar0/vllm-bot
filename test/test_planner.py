@@ -7,7 +7,7 @@ import sys
 import json
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.planner import Planner
 from src.memory import Memory
@@ -29,7 +29,7 @@ def test_planner_initialization():
     print("\nTest 1: Planner Initialization")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -50,7 +50,7 @@ def test_tool_specs_generation():
     print("\nTest 2: Tool Specs Generation")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -70,7 +70,7 @@ def test_available_tools():
     print("\nTest 3: Get Available Tools")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -93,7 +93,7 @@ def test_system_prompt_generation():
     print("\nTest 4: System Prompt Generation")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     memory.set_preference('language', 'en')
     
     state = AgentState()
@@ -124,7 +124,7 @@ def test_json_extraction():
     print("\nTest 5: JSON Extraction")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -155,7 +155,7 @@ def test_planner_output_parsing():
     print("\nTest 6: Planner Output Parsing")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -210,7 +210,7 @@ def test_repeated_calls_detection():
     print("\nTest 7: Repeated Calls Detection")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     state.reset("Test task")
     
@@ -255,7 +255,7 @@ def test_planner_context_building():
     print("\nTest 8: Context Building")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     memory.set_preference('language', 'en')
     memory.set_environment('os', 'Linux')
     memory.record_decision('commands', 'list_cmd', 'ls -la')
@@ -287,7 +287,7 @@ def test_long_reason_truncation():
     print("\nTest 9: Reason Truncation")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     

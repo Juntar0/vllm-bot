@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 import json
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.memory import Memory
 from src.state import (
@@ -22,7 +22,7 @@ def test_memory():
     print("Testing Memory Module")
     print("=" * 80)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     
     # Test preferences
     memory.set_preference('language', 'en')
@@ -57,7 +57,7 @@ def test_memory():
     
     # Test persistence
     memory.save()
-    memory2 = Memory('./test_data/memory.json')
+    memory2 = Memory('./test/test_data/memory.json')
     assert memory2.get_preference('language') == 'en'
     print("✅ Persistence working")
     
@@ -148,7 +148,7 @@ def test_audit_log():
     print("Testing AuditLog Module")
     print("=" * 80)
     
-    audit = AuditLog('./test_data/runlog.jsonl')
+    audit = AuditLog('./test/test_data/runlog.jsonl')
     
     # Test logging tool calls
     audit.log_tool_call(
@@ -224,7 +224,7 @@ def test_audit_log():
         duration_sec=0.02
     )
     
-    audit2 = AuditLog('./test_data/runlog.jsonl')
+    audit2 = AuditLog('./test/test_data/runlog.jsonl')
     audit2.load_from_file()
     assert len(audit2.entries) >= 5
     print("✅ Persistence working")

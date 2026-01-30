@@ -6,7 +6,7 @@ Test Responder module
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.responder import Responder
 from src.memory import Memory
@@ -27,7 +27,7 @@ def test_responder_initialization():
     print("\nTest 1: Responder Initialization")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -47,7 +47,7 @@ def test_system_prompt_generation():
     print("\nTest 2: System Prompt Generation")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     memory.set_preference('language', 'en')
     
     state = AgentState()
@@ -92,7 +92,7 @@ def test_format_tool_results():
     print("\nTest 3: Format Tool Results")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -146,7 +146,7 @@ def test_is_final_answer():
     print("\nTest 4: Final Answer Detection")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -190,7 +190,7 @@ def test_extract_summary():
     print("\nTest 5: Summary Extraction")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -227,7 +227,7 @@ def test_extract_next_action():
     print("\nTest 6: Next Action Extraction")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -255,7 +255,7 @@ def test_responder_output_parsing():
     print("\nTest 7: Responder Output Parsing")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     state.reset("Test task")
     state.remaining_tasks = []
@@ -292,7 +292,7 @@ def test_quality_score():
     print("\nTest 8: Response Quality Scoring")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     state = AgentState()
     config = get_test_config()
     
@@ -347,7 +347,7 @@ def test_context_building():
     print("\nTest 9: Context Building")
     print("-" * 60)
     
-    memory = Memory('./test_data/memory.json')
+    memory = Memory('./test/test_data/memory.json')
     memory.set_preference('language', 'en')
     memory.set_environment('os', 'Linux')
     

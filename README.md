@@ -150,8 +150,14 @@ config.json の allowed_commands に追加：
 ## テスト
 
 ```bash
-python3 test_integration.py
-python3 test_agent_loop.py
+# 統合テスト
+python3 test/test_integration.py
+
+# 個別テスト
+python3 test/test_agent_loop.py
+python3 test/test_planner.py
+python3 test/test_responder.py
+python3 test/test_tool_runner.py
 ```
 
 ## ファイル構成
@@ -160,7 +166,7 @@ python3 test_agent_loop.py
 vllm-bot/
 ├── cli.py                 # メインプログラム
 ├── config/config.json     # 設定ファイル
-├── src/
+├── src/                   # ソースコード
 │   ├── agent.py          # 統合エージェント
 │   ├── agent_loop.py     # ループ制御
 │   ├── planner.py        # ツール選択
@@ -168,11 +174,17 @@ vllm-bot/
 │   ├── responder.py      # 回答生成
 │   ├── memory.py         # 長期記憶
 │   ├── state.py          # 短期状態
-│   ├── debugger.py       # デバッグ
 │   └── ...
+├── test/                  # テスト
+│   ├── test_integration.py
+│   ├── test_agent_loop.py
+│   ├── test_planner.py
+│   ├── test_responder.py
+│   ├── test_tool_runner.py
+│   ├── test_*.py
+│   └── test_data/
 ├── workspace/            # 作業ディレクトリ
-├── data/                 # メモリ・ログ
-└── test_*.py            # テスト
+└── data/                 # メモリ・ログ
 ```
 
 ## ライセンス
