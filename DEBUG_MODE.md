@@ -50,6 +50,14 @@
 ### `"verbose"` - 詳細情報（推奨）
 
 ```
+[DEBUG VLLM_API] --- API Request ---
+[DEBUG VLLM_API] Messages (2):
+[DEBUG VLLM_API]   [0] system: You are a response agent...
+[DEBUG VLLM_API]   [1] user: Generate a natural language response...
+
+[DEBUG VLLM_API] --- API Response ---
+[DEBUG VLLM_API] Response: apt update が実行され...
+
 [DEBUG PLANNER] --- Input to Planner ---
 [DEBUG PLANNER] Request: apt updateしてみて
 [DEBUG PLANNER] Facts: [...]
@@ -68,10 +76,74 @@
 ```
 
 **表示内容**:
+- **vLLM API リクエスト**（プロンプト内容）
+- **vLLM API レスポンス**（LLM の回答）
 - すべての Planner 入出力
 - ツール実行の **完全な出力**、エラー、終了コード
 - Responder の詳細情報
 - State の全詳細
+
+---
+
+## API リクエスト・レスポンスの確認
+
+Verbose モードでは vLLM API へのリクエストとレスポンスも表示されます。
+
+### API リクエスト例
+
+```
+[DEBUG VLLM_API] --- API Request ---
+[DEBUG VLLM_API] URL: http://localhost:8000/v1/chat/completions
+[DEBUG VLLM_API] Model: gpt-oss-medium
+[DEBUG VLLM_API] Temperature: 0.0
+[DEBUG VLLM_API] Max Tokens: 2048
+[DEBUG VLLM_API] Messages (2):
+[DEBUG VLLM_API]   [0] system: You are a response agent for an OS automation system...
+[DEBUG VLLM_API]   [1] user: Generate a natural language response based on the tool results above.
+```
+
+### API レスポンス例
+
+```
+[DEBUG VLLM_API] --- API Response ---
+[DEBUG VLLM_API] Finish Reason: stop
+[DEBUG VLLM_API] Response: apt update が実行され、リポジトリ情報が取得されました。
+```
+
+### 投げたプロンプトの詳細を見る
+
+```bash
+# Verbose モード有効化
+vi config/config.json
+# "level": "verbose"
+
+./run.sh
+
+> apt updateしてみて
+
+# 出力:
+[DEBUG VLLM_API] --- API Request ---
+[DEBUG VLLM_API] Messages (N):
+[DEBUG VLLM_API]   [0] system: (Planner のシステムプロンプト)
+[DEBUG VLLM_API]   [1] user: (ユーザーのリクエスト)
+
+[DEBUG VLLM_API] --- API Response ---
+(LLM からの回答)
+```
+
+### LLM が何を見ているか確認
+
+```
+system メッセージ内容:
+- 指示内容
+- 環境情報（memory）
+- 現在の状態（facts, tasks）
+- ツール呼び出しの指示
+
+user メッセージ内容:
+- ツール実行結果
+- 元のリクエスト
+```
 
 ---
 

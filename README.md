@@ -160,7 +160,7 @@ config.json の allowed_commands に追加：
 "allowed_commands": []  # 全コマンド許可
 ```
 
-### ツール実行の詳細を見たい
+### ツール実行・API リクエストの詳細を見たい
 
 ```bash
 vi config/config.json
@@ -169,12 +169,24 @@ vi config/config.json
 ./run.sh
 
 > apt updateしてみて
+
+# vLLM API リクエスト
+[DEBUG VLLM_API] --- API Request ---
+[DEBUG VLLM_API] Messages (2):
+[DEBUG VLLM_API]   [0] system: You are a response agent...
+[DEBUG VLLM_API]   [1] user: Generate a response...
+
+# ツール実行結果
 [DEBUG TOOL_RUNNER] --- exec_cmd Full Result ---
 {
-  "output": "...",
+  "output": "Get:1 http://...",
   "error": "",
   "exit_code": 0
 }
+
+# vLLM API レスポンス
+[DEBUG VLLM_API] --- API Response ---
+[DEBUG VLLM_API] Response: apt update が実行され...
 ```
 
 ## テスト
