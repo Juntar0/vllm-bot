@@ -147,6 +147,39 @@ user メッセージ内容:
 
 ---
 
+## API エラーの詳細確認
+
+Verbose モードでは API エラーも詳しく表示されます。
+
+### vLLM Internal Server Error (500)
+
+```
+[DEBUG VLLM_API] --- API Response ---
+[DEBUG VLLM_API] ✗ Error Response:
+[DEBUG VLLM_API]   Message: EngineCore encountered an issue...
+[DEBUG VLLM_API]   Type: Internal Server Error
+[DEBUG VLLM_API]   Code: 500
+```
+
+**解決**: [VLLM_TROUBLESHOOT.md](VLLM_TROUBLESHOOT.md) を参照
+
+### JSON Parse Error
+
+```
+[DEBUG VLLM_API] --- API Response (Raw) ---
+[DEBUG VLLM_API] Status Code: 500
+[DEBUG VLLM_API] Content: {'error': {...}}
+
+[DEBUG PLANNER] --- JSON Parse Error ---
+[DEBUG PLANNER] Error: Expecting property name...
+[DEBUG PLANNER] Raw response: {'"error"'...
+[DEBUG PLANNER] Extracted JSON: ...
+```
+
+**解決**: vLLM サーバが正常に動作しているか確認
+
+---
+
 ## トラブルシューティング
 
 ### sudo がパスワード要求するか確認

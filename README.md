@@ -144,13 +144,16 @@ Goodbye! 👋
 
 ## トラブルシューティング
 
-詳しくは [DEBUG_MODE.md](DEBUG_MODE.md) を参照してください。
+- **vLLM エラー**: [VLLM_TROUBLESHOOT.md](VLLM_TROUBLESHOOT.md)
+- **デバッグモード**: [DEBUG_MODE.md](DEBUG_MODE.md)
 
 ### vLLM に接続できない
 
 ```
 config.json の base_url を確認：
 "base_url": "http://localhost:8000/v1"
+
+詳細は VLLM_TROUBLESHOOT.md を参照
 ```
 
 ### コマンドが実行されない
