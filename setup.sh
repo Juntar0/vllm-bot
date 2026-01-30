@@ -73,11 +73,7 @@ if [ ! -f config/config.json ]; then
             allowed_commands='[]'
             echo "  ✓ Using full access mode"
             echo "  ⚠️  WARNING: All commands will be allowed!"
-            read -p "  Include sudo? (y/n) [n]: " include_sudo
-            if [[ "$include_sudo" =~ ^[Yy]$ ]]; then
-                allowed_commands='["sudo"]'
-                echo "  ✓ sudo enabled"
-            fi
+            echo "  ℹ️  Note: sudo is already included in full access mode"
             ;;
         3)
             read -p "  Allowed commands (comma-separated): " allowed_cmds
