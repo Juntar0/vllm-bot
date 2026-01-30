@@ -144,6 +144,7 @@ Goodbye! 👋
 
 ## トラブルシューティング
 
+- **ログファイル**: [LOGGING.md](LOGGING.md) - すべての実行結果を自動記録
 - **vLLM エラー**: [VLLM_TROUBLESHOOT.md](VLLM_TROUBLESHOOT.md)
 - **デバッグモード**: [DEBUG_MODE.md](DEBUG_MODE.md)
 
