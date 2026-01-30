@@ -1,5 +1,40 @@
 # Troubleshooting
 
+## コマンドが許可されていないエラー
+
+### 問題
+
+```
+Error: Command not permitted: apt update
+```
+
+### 解決方法
+
+1. **config.json を確認**:
+```bash
+cat config/config.json | grep allowed_commands
+```
+
+2. **Full access に変更**:
+```json
+"allowed_commands": []
+```
+
+3. **または ウィザード再実行**:
+```bash
+rm config/config.json
+./setup.sh
+```
+ウィザードで `Security: 2` を選択
+
+### allowed_commands の意味
+
+- `[]` = 全コマンド許可（apt, sudo, npm など全て）
+- `["apt", "sudo"]` = 指定コマンドのみ
+- `["ls", "cat"]` = 制限的（読み込み操作のみ）
+
+---
+
 ## git pull fails after running the bot
 
 ### 問題

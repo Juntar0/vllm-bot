@@ -33,17 +33,16 @@ Security Configuration:
   Command permission level:
     2) Full access (all commands)
   Choose [1]: 2
-  Include sudo? (y/n) [n]: y  ← ここで sudo 許可
 ```
 
-**結果**: すべてのコマンド + sudo 許可
+**結果**: すべてのコマンド（apt, sudo, pip など全て）が実行可能
 
 ```json
-"allowed_commands": ["sudo"]
+"allowed_commands": []
 ```
 
-⚠️ **注意**: `allowed_commands` が `[]` の場合 = 全コマンド許可
-⚠️ **注意**: `["sudo"]` の場合 = sudo コマンドのみ
+✅ **説明**: `"allowed_commands": []` = すべてのコマンド許可（最も自由度が高い）
+✅ **含まれるもの**: sudo, apt, apt-get, pip, npm, python, bash など全て
 
 ---
 
@@ -117,13 +116,12 @@ Base URL: (Enter)
 Model: (Enter)
 Workspace: (Enter)
 Security: 2
-Include sudo: y
 Workspace: 2
 Debug: y
 ```
 
 **結果**:
-- すべてのコマンド + sudo
+- すべてのコマンド実行可能（apt, sudo, pip, npm など）
 - システム全体アクセス
 - デバッグ有効
 
@@ -145,11 +143,24 @@ Allowed commands: ls,cat,python,bash
 cat config/config.json | python3 -m json.tool
 ```
 
-設定値:
+### allowed_commands の意味
+
+**`[] （空配列）**:
+```json
+"allowed_commands": []
+```
+すべてのコマンド実行可能（Full access）
+
+**制限リスト**:
+```json
+"allowed_commands": ["ls", "cat", "grep", "find"]
+```
+指定したコマンドのみ実行可能
+
+その他設定:
 ```json
 {
   "security": {
-    "allowed_commands": ["ls", "cat", ...],
     "timeout_sec": 30,
     "max_output_size": 200000
   }
@@ -173,49 +184,75 @@ rm config/config.json
 vi config/config.json
 ```
 
-例えば、`allowed_commands` を変更：
+**全コマンド許可**:
 ```json
-"allowed_commands": ["sudo", "ls", "cat", "python"]
+"allowed_commands": []
+```
+
+**特定コマンドのみ許可**:
+```json
+"allowed_commands": ["sudo", "apt", "apt-get", "ls", "cat", "python"]
 ```
 
 ---
 
-## sudo が必要な理由
+## 全コマンド許可（Full Access）が必要な場合
 
 **ユースケース**:
 ```
-> Install package with apt
-エージェント: sudo apt update && sudo apt install python3-numpy
+> Package install
+エージェント: apt update && apt install python3-numpy
 
-> Restart service
-エージェント: sudo systemctl restart nginx
+> Service restart
+エージェント: systemctl restart nginx
 
-> Change file permissions
-エージェント: sudo chmod 755 script.sh
+> Permission change
+エージェント: chmod 755 script.sh
+
+> System update
+エージェント: apt upgrade
 ```
 
-`allowed_commands` に `"sudo"` を追加することで、これらのコマンドが実行可能になります。
+これらを実行するには、`"allowed_commands": []` に設定して全コマンド許可を有効化します。
+
+**セットアップウィザードで**:
+```
+Security: 2 (Full access)
+```
+
+**または config.json で**:
+```json
+"allowed_commands": []
+```
 
 ---
 
 ## セキュリティ推奨事項
 
-### 本番環境（推奨）
+### 本番環境（推奨・最も制限）
 ```json
 "allowed_commands": ["ls", "cat", "grep", "find"],
 "workspace": "./workspace"
 ```
 
-### 開発環境
+### 開発環境（全コマンド許可）
 ```json
-"allowed_commands": ["sudo"],
+"allowed_commands": [],
 "workspace": "/"
 ```
 
-### テスト環境
+### テスト環境（中程度の制限）
 ```json
-"allowed_commands": ["python", "bash", "git"],
+"allowed_commands": ["python", "bash", "git", "npm", "pip"],
 "workspace": "/"
 ```
+
+### allowed_commands の値の意味
+
+| 設定値 | 意味 | 実行可能なコマンド |
+|-------|------|------------------|
+| `[]` | 全コマンド許可 | apt, sudo, python, npm など全て |
+| `["apt", "sudo"]` | 指定のみ許可 | apt と sudo のみ |
+| `["ls", "cat"]` | 安全なコマンドのみ | 読み込み操作のみ |
 
 ---
