@@ -14,27 +14,46 @@
 
 ## 使用方法
 
+**シンプルで見やすい出力形式**:
+
 ```
-> Find Python files
-Found 42 Python files
+> ディレクトリを見して
+• bin/
+• boot/
+• cdrom/
+• dev/
+• etc/
+(清潔なリスト形式)
 
-> Count total lines
-15,420 lines
+> Python ファイルを探して
+• src/agent.py
+• src/planner.py
+• src/responder.py
+• test/test_integration.py
+(箇条書きで表示)
 
-> Show largest file
-main.py: 2,340 lines
+> main.py の行数を数えて
+2,340 行
 
 > debug on
 ✓ Debug enabled
 
-> Find errors
+> 今のディレクトリをみして
 [DEBUG PLANNER] Need tools: true
-[DEBUG TOOL_RUNNER] Executing: grep
-Found 12 errors
+[DEBUG TOOL_RUNNER] Executing: list_dir
+• bin/
+• boot/
+...
 
 > exit
 Goodbye! 👋
 ```
+
+**出力形式の特徴**:
+- ✅ シンプルで読みやすい
+- ✅ 箇条書きで情報整理
+- ✅ 冗長な説明なし
+- ✅ 日本語・英語両対応
 
 ## コマンド
 
