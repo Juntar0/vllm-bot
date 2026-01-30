@@ -57,17 +57,59 @@ if [ ! -f config/config.json ]; then
 
     # Security settings
     echo "Security Configuration:"
-    read -p "  Allow workspace only? (y/n) [y]: " restrict_workspace
-    restrict_workspace=${restrict_workspace:-y}
+    echo "  Command permission level:"
+    echo "    1) Restricted (default: ls, cat, grep, find, echo, wc)"
+    echo "    2) Full access (all commands)"
+    echo "    3) Custom (specify commands)"
+    read -p "  Choose [1]: " security_level
+    security_level=${security_level:-1}
     
-    if [[ "$restrict_workspace" =~ ^[Yy]$ ]]; then
-        allowed_commands='["ls", "cat", "grep", "find", "echo", "wc"]'
-    else
-        read -p "  Allowed commands (comma-separated) [ls,cat,grep,find]: " allowed_cmds
-        allowed_cmds=${allowed_cmds:-ls,cat,grep,find}
-        # Convert to JSON array
-        allowed_commands="[\"$(echo $allowed_cmds | sed 's/,/", "/g')\"]"
-    fi
+    case $security_level in
+        1)
+            allowed_commands='["ls", "cat", "grep", "find", "echo", "wc"]'
+            echo "  ✓ Using restricted mode"
+            ;;
+        2)
+            allowed_commands='[]'
+            echo "  ✓ Using full access mode"
+            echo "  ⚠️  WARNING: All commands will be allowed!"
+            read -p "  Include sudo? (y/n) [n]: " include_sudo
+            if [[ "$include_sudo" =~ ^[Yy]$ ]]; then
+                allowed_commands='["sudo"]'
+                echo "  ✓ sudo enabled"
+            fi
+            ;;
+        3)
+            read -p "  Allowed commands (comma-separated): " allowed_cmds
+            allowed_commands="[\"$(echo $allowed_cmds | sed 's/,/", "/g')\"]"
+            echo "  ✓ Custom commands: $allowed_cmds"
+            ;;
+        *)
+            allowed_commands='["ls", "cat", "grep", "find", "echo", "wc"]'
+            echo "  ✓ Using restricted mode (invalid input)"
+            ;;
+    esac
+    
+    echo
+
+    # Workspace restriction
+    echo "Workspace Restriction:"
+    echo "  1) Restricted (./workspace only)"
+    echo "  2) Full system access (/)"
+    read -p "  Choose [1]: " workspace_level
+    workspace_level=${workspace_level:-1}
+    
+    case $workspace_level in
+        2)
+            workspace_dir="/"
+            echo "  ✓ Full system access enabled"
+            echo "  ⚠️  WARNING: Full system access allowed!"
+            ;;
+        *)
+            workspace_dir=${workspace_dir:-./workspace}
+            echo "  ✓ Using workspace restriction"
+            ;;
+    esac
     
     echo
 
@@ -129,6 +171,10 @@ EOF
 else
     echo "✓ config/config.json already exists (skipping wizard)"
     echo
+    echo "To reconfigure, delete the file:"
+    echo "  rm config/config.json"
+    echo "  ./setup.sh"
+    echo
 fi
 
 # Verify config
@@ -145,9 +191,16 @@ echo "==================================="
 echo "✓ Setup complete!"
 echo "==================================="
 echo
-echo "Configuration saved:"
-cat config/config.json | venv/bin/python3 -m json.tool | head -20
-echo "..."
+echo "Configuration:"
+venv/bin/python3 -c "
+import json
+cfg = json.load(open('config/config.json'))
+print(f\"  vLLM: {cfg['vllm']['base_url']}\")
+print(f\"  Model: {cfg['vllm']['model']}\")
+print(f\"  Workspace: {cfg['workspace']['dir']}\")
+print(f\"  Commands: {cfg['security']['allowed_commands']}\")
+print(f\"  Debug: {cfg['debug']['enabled']}\")
+"
 echo
 echo "To run: ./run.sh"
 echo
