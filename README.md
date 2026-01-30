@@ -144,6 +144,8 @@ Goodbye! 👋
 
 ## トラブルシューティング
 
+詳しくは [DEBUG_MODE.md](DEBUG_MODE.md) を参照してください。
+
 ### vLLM に接続できない
 
 ```
@@ -155,14 +157,24 @@ config.json の base_url を確認：
 
 ```json
 config.json の allowed_commands に追加：
-"allowed_commands": ["ls", "cat", "grep", "rm"]
+"allowed_commands": []  # 全コマンド許可
 ```
 
-### 出力が見えない
+### ツール実行の詳細を見たい
 
-```
-> debug on
-で内部処理を確認
+```bash
+vi config/config.json
+# "level": "verbose" に変更
+
+./run.sh
+
+> apt updateしてみて
+[DEBUG TOOL_RUNNER] --- exec_cmd Full Result ---
+{
+  "output": "...",
+  "error": "",
+  "exit_code": 0
+}
 ```
 
 ## テスト
