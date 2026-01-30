@@ -114,6 +114,16 @@ class AgentState:
         self.last_tool_results = []
         self.created_at = datetime.now().isoformat()
     
+    def add_user_request(self, user_request: str) -> None:
+        """Add a new user request while preserving conversation history
+        
+        This is used for multi-turn conversations where each user message
+        builds on previous context.
+        """
+        self.user_request = user_request
+        self.loop_count = 0  # Reset loop counter for new request
+        # Keep history, facts, and remaining_tasks from previous requests
+    
     def start_loop(self, loop_id: int) -> None:
         """Mark the start of a new loop"""
         self.loop_count = loop_id
@@ -172,20 +182,30 @@ class AgentState:
         """Get a summary of recent loop history for Planner context"""
         recent = self.history[-max_loops:] if len(self.history) > max_loops else self.history
         
-        lines = [f"## Loop History (recent {len(recent)})"]
+        if not recent:
+            return "## Loop History (none yet)"
+        
+        lines = [f"## Loop History (recent {len(recent)} loops)"]
         for record in recent:
             lines.append(f"\nLoop {record.loop_id}:")
             
             if record.planner_output:
-                lines.append(f"  Planner: {record.planner_output.reason_brief}")
+                reason = record.planner_output.reason_brief
+                tools_count = len(record.planner_output.tool_calls)
+                lines.append(f"  Planner decision: {reason} (tools: {tools_count})")
             
             if record.tool_results:
                 for result in record.tool_results:
                     status = "✓" if result.success else "✗"
-                    lines.append(f"  {status} {result.tool_name}: {result.output[:100]}")
+                    output_preview = result.output[:80].replace('\n', ' ') if result.output else "(no output)"
+                    if result.error:
+                        lines.append(f"  {status} {result.tool_name}: ERROR: {result.error[:80]}")
+                    else:
+                        lines.append(f"  {status} {result.tool_name}: {output_preview}")
             
             if record.responder_output:
-                lines.append(f"  Response: {record.responder_output.summary[:100]}")
+                response_preview = record.responder_output.response[:100].replace('\n', ' ')
+                lines.append(f"  Response: {response_preview}")
         
         return '\n'.join(lines)
     

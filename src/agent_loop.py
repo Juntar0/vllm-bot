@@ -79,8 +79,8 @@ class AgentLoop:
             Final response string
         """
         
-        # Reset state for new conversation
-        self.state.reset(user_request)
+        # Add this request to state (don't reset - preserve conversation history)
+        self.state.add_user_request(user_request)
         
         if self.debugger:
             self.debugger.print("AGENT_LOOP", f"Starting agent execution")
