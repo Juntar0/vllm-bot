@@ -1,91 +1,51 @@
 # vLLM Bot - Interactive Agent
 
-**対話型エージェント** - 複数のターンで会話しながりながらタスクを実行します。
+対話型エージェント。複数ターンで会話しながらタスク実行。
+
+## クイックスタート
 
 ```bash
-$ python3 cli.py
+# セットアップ
+mkdir -p workspace data
+vi config/config.json  # 設定を確認
 
-> Find all Python files
-Found 42 Python files in ./workspace
+# 実行
+python3 cli.py
+```
 
-> Count total lines in them
-15,420 lines of code
+## 使用方法
 
-> Show files larger than 1000 lines
-5 files:
-- main.py: 2,340 lines
-- utils.py: 1,560 lines
-- config.py: 1,245 lines
-- ...
+```
+> Find Python files
+Found 42 Python files
+
+> Count total lines
+15,420 lines
+
+> Show largest file
+main.py: 2,340 lines
+
+> debug on
+✓ Debug enabled
+
+> Find errors
+[DEBUG PLANNER] Need tools: true
+[DEBUG TOOL_RUNNER] Executing: grep
+Found 12 errors
 
 > exit
 Goodbye! 👋
 ```
 
----
-
-## クイックスタート
-
-### 1. セットアップ
-
-```bash
-cd ~/clawd/vllm-bot
-mkdir -p workspace data
-
-# config/config.json を確認・編集
-vi config/config.json
-```
-
-### 2. 実行
-
-```bash
-python3 cli.py
-```
-
-### 3. 対話開始
-
-```
-> あなたのリクエスト
-エージェントの回答
-
-> 次のリクエスト
-エージェントの回答
-
-> exit
-```
-
----
-
 ## コマンド
 
-対話中に以下が使用できます：
-
-```
-help              - ヘルプを表示
-clear             - 会話履歴をクリア（新規開始）
-debug on/off      - デバッグ出力の切り替え
-config            - 現在の設定を表示
-exit / quit       - 終了
-```
-
-**例**:
-```
-> debug on
-✓ Debug enabled
-
-> Find Python files
-[DEBUG PLANNER] ...
-[DEBUG TOOL_RUNNER] ...
-Found 42 files
-
-> debug off
-✓ Debug disabled
-
-> Count lines
-15,420 lines
-```
-
----
+| コマンド | 動作 |
+|---------|------|
+| `help` | ヘルプ表示 |
+| `debug on/off` | デバッグ切り替え |
+| `clear` | 会話クリア |
+| `config` | 設定表示 |
+| `exit/quit` | 終了 |
 
 ## 設定 (config/config.json)
 
@@ -99,7 +59,7 @@ Found 42 files
     "dir": "./workspace"
   },
   "security": {
-    "allowed_commands": ["ls", "cat", "grep", "find", "echo", "wc"],
+    "allowed_commands": ["ls", "cat", "grep", "find", "wc"],
     "timeout_sec": 30
   },
   "debug": {
@@ -112,195 +72,109 @@ Found 42 files
 }
 ```
 
-詳細は `CONFIG.md` を参照。
+## セキュリティ設定
 
----
+### workspace.dir
+- `./workspace` - ワークスペース内のみ（デフォルト）
+- `/` - システム全体
+
+### allowed_commands
+許可するコマンドのリスト：
+```json
+"allowed_commands": ["ls", "cat", "grep", "find", "wc", "head", "tail"]
+```
+
+### その他
+- `timeout_sec` - コマンド実行タイムアウト（秒）
+- `max_output_size` - 出力サイズ制限（文字数）
 
 ## デバッグ
 
-実行中に内部処理を見たい場合：
-
-```
-> debug on
-
-> Find Python files
-[DEBUG PLANNER] Need tools: true
-[DEBUG PLANNER] Tool calls: 1
-[DEBUG TOOL_RUNNER] Executing: find
-[DEBUG TOOL_RUNNER] ✓ find completed
-[DEBUG RESPONDER] Response: Found 42 files
-
-> debug off
-```
-
-詳細は `DEBUG.md` を参照。
-
----
-
-## アーキテクチャ
-
-```
-┌──────────────────────────────────┐
-│     Interactive Chat Loop        │
-├──────────────────────────────────┤
-│ User: > Find Python files        │
-│   ↓                              │
-│ [Agent Processing]               │
-│ ├─ Planner (LLM)                 │
-│ ├─ Tool Runner (Host)            │
-│ └─ Responder (LLM)               │
-│   ↓                              │
-│ Agent: Found 42 files            │
-│   ↓                              │
-│ User: > Count lines              │
-│   ↓                              │
-│ [Agent Processing]               │
-│   ↓                              │
-│ Agent: 15,420 lines              │
-│   ↓                              │
-│ User: > exit                     │
-└──────────────────────────────────┘
-```
-
----
-
-## 機能
-
-### ✅ 実装済み
-
-- **対話型インタフェース** - 複数ターンでの会話
-- **複数ループ処理** - 最大5ループで複雑なタスク対応
-- **セキュリティ** - パス制限、コマンド allowlist
-- **メモリ** - 長期記憶で前の回答を活用
-- **デバッグ** - 内部処理を可視化
-- **設定管理** - JSON ベースの統一設定
-
-### 🔧 ツール
-
-- `list_dir` - ファイル/ディレクトリ一覧
-- `read_file` - ファイル読み込み
-- `write_file` - ファイル作成/上書き
-- `edit_file` - テキスト置換
-- `exec_cmd` - シェルコマンド実行
-- `grep` - ファイル検索
-
----
-
-## 使用例
-
-### 例1: ファイル操作
-
-```
-> List Python files
-Found 42 Python files
-
-> Count total lines
-15,420 lines
-
-> Find largest file
-main.py: 2,340 lines
-```
-
-### 例2: ログ分析
-
-```
-> Find error logs
-Found 3 error.log files
-
-> Count errors
-127 errors total
-
-> Show errors by type
-- DatabaseError: 45
-- NetworkError: 52
-- TimeoutError: 30
-```
-
-### 例3: デバッグ付き実行
+実行中にデバッグを有効化：
 
 ```
 > debug on
 ✓ Debug enabled
 
 > Find files
-[DEBUG PLANNER] Need tools: true
-[DEBUG TOOL_RUNNER] Executing: find
-Found 42 files
+[DEBUG PLANNER] ...
+[DEBUG TOOL_RUNNER] ...
+[DEBUG RESPONDER] ...
 
 > debug off
 ✓ Debug disabled
 ```
 
----
+**レベル**: `"none"` / `"basic"` / `"verbose"`
 
-## 設定値変更
+## 機能
 
-config.json を編集して設定を変更：
+### ツール
+- `list_dir` - ファイル一覧
+- `read_file` - ファイル読込
+- `write_file` - ファイル作成
+- `edit_file` - テキスト置換
+- `exec_cmd` - シェルコマンド実行
+- `grep` - ファイル検索
 
-```json
-{
-  "workspace": {
-    "dir": "/"                      // システム全体にアクセス
-  },
-  "security": {
-    "allowed_commands": [],         // すべてのコマンド実行可
-    "timeout_sec": 60               // タイムアウト 60 秒
-  },
-  "debug": {
-    "enabled": true,                // デバッグデフォルト有効
-    "level": "verbose"              // 詳細情報を表示
-  }
-}
-```
-
----
-
-## ドキュメント
-
-| ファイル | 内容 |
-|---------|------|
-| `CONFIG.md` | 設定オプション詳細 |
-| `DEBUG.md` | デバッグシステム詳細 |
-| `USAGE.md` | ユーザインタラクション |
-| `README_COMPLETE.md` | 完全な技術ドキュメント |
-
----
+### 特徴
+- **多ターン対話** - 複数質問を順番に処理
+- **自動ループ処理** - 複雑なタスクは最大5ループで自動処理
+- **メモリ** - 前の回答をコンテキストに使用
+- **セキュリティ** - パス制限、コマンド制限、リソース制限
+- **ログ記録** - 監査ログを自動記録
 
 ## トラブルシューティング
 
 ### vLLM に接続できない
 
 ```
-❌ Error: Failed to connect to vLLM API
-
-対策:
-1. vLLM サーバが起動しているか確認
-2. config.json の base_url を確認
-3. ファイアウォール設定を確認
+config.json の base_url を確認：
+"base_url": "http://localhost:8000/v1"
 ```
 
 ### コマンドが実行されない
 
-```
-❌ Command not allowed: rm
-
-対策:
+```json
 config.json の allowed_commands に追加：
-"allowed_commands": ["ls", "cat", "rm"]
+"allowed_commands": ["ls", "cat", "grep", "rm"]
 ```
 
----
+### 出力が見えない
+
+```
+> debug on
+で内部処理を確認
+```
+
+## テスト
+
+```bash
+python3 test_integration.py
+python3 test_agent_loop.py
+```
+
+## ファイル構成
+
+```
+vllm-bot/
+├── cli.py                 # メインプログラム
+├── config/config.json     # 設定ファイル
+├── src/
+│   ├── agent.py          # 統合エージェント
+│   ├── agent_loop.py     # ループ制御
+│   ├── planner.py        # ツール選択
+│   ├── tool_runner.py    # ツール実行
+│   ├── responder.py      # 回答生成
+│   ├── memory.py         # 長期記憶
+│   ├── state.py          # 短期状態
+│   ├── debugger.py       # デバッグ
+│   └── ...
+├── workspace/            # 作業ディレクトリ
+├── data/                 # メモリ・ログ
+└── test_*.py            # テスト
+```
 
 ## ライセンス
 
 MIT
-
----
-
-## サポート
-
-問題が発生した場合：
-
-1. `debug on` で内部処理を確認
-2. `config` で現在の設定を確認
-3. ドキュメントを参照（CONFIG.md, DEBUG.md）
