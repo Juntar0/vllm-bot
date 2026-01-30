@@ -28,14 +28,56 @@ echo
 echo "✓ Creating directories..."
 mkdir -p workspace
 mkdir -p data
+mkdir -p config
 echo
 
-# Check config
+# Create config if not exists
 if [ ! -f config/config.json ]; then
-    echo "❌ config/config.json not found"
-    exit 1
+    echo "✓ Creating config/config.json..."
+    cat > config/config.json << 'EOF'
+{
+  "vllm": {
+    "base_url": "http://localhost:8000/v1",
+    "model": "gpt-oss-medium",
+    "temperature": 0.0,
+    "max_tokens": 2048,
+    "enable_function_calling": true
+  },
+  "workspace": {
+    "dir": "./workspace"
+  },
+  "security": {
+    "exec_enabled": true,
+    "allowed_commands": ["ls", "cat", "grep", "find", "echo", "wc"],
+    "timeout_sec": 30,
+    "max_output_size": 200000
+  },
+  "memory": {
+    "path": "./data/memory.json",
+    "auto_backup": true
+  },
+  "audit": {
+    "enabled": true,
+    "log_path": "./data/runlog.jsonl"
+  },
+  "agent": {
+    "max_loops": 5,
+    "loop_wait_sec": 0.5
+  },
+  "debug": {
+    "enabled": false,
+    "level": "basic",
+    "show_planner": true,
+    "show_tool_runner": true,
+    "show_responder": true,
+    "show_state": true
+  }
+}
+EOF
+    echo
 fi
 
+# Verify config
 echo "✓ Verifying config..."
 venv/bin/python3 -c "import json; json.load(open('config/config.json'))" || (echo "❌ config/config.json is invalid" && exit 1)
 echo
