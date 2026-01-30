@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "created_at": "2026-01-30T09:37:54.741697",
+  "last_updated": "2026-01-30T09:37:54.745189",
+  "user_preferences": {
+    "language": "en",
+    "output_granularity": "detailed"
+  },
+  "environment": {
+    "os": "Linux",
+    "work_dir": "/home/user/workspace"
+  },
+  "repeated_decisions": {
+    "commands": {
+      "list_files": {
+        "value": "ls -la",
+        "recorded_at": "2026-01-30T09:37:54.744385"
+      }
+    }
+  },
+  "facts": {
+    "file_structure": [
+      {
+        "fact": "/home/user/projects contains: src/, tests/",
+        "recorded_at": "2026-01-30T09:37:54.744502"
+      }
+    ],
+    "system_info": [
+      {
+        "fact": "Python 3.10 installed",
+        "recorded_at": "2026-01-30T09:37:54.744827"
+      }
+    ]
+  }
+}

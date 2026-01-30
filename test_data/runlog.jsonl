@@ -1,0 +1,5 @@
+{"timestamp": "2026-01-30T09:37:54.745566", "loop_id": 1, "tool_name": "read_file", "args": {"path": "test.txt"}, "output": "File content here", "error": "", "exit_code": 0, "duration_sec": 0.05, "success": true}
+{"timestamp": "2026-01-30T09:37:54.745626", "loop_id": 1, "event_type": "planner_decision", "decision": {"tools": ["read_file"], "args": [{"path": "test.txt"}]}, "reasoning": "Need to read the file first"}
+{"timestamp": "2026-01-30T09:37:54.745658", "loop_id": 1, "event_type": "responder_response", "response_preview": "The file contains: File content here", "tool_count_processed": 1}
+{"timestamp": "2026-01-30T09:37:54.745683", "loop_id": 1, "event_type": "error", "error_type": "FileNotFoundError", "error_message": "File not found: missing.txt", "context": {"attempted_path": "missing.txt"}}
+{"timestamp": "2026-01-30T09:37:54.745773", "loop_id": 2, "tool_name": "write_file", "args": {"path": "output.txt", "content": "test"}, "output": "", "error": "", "exit_code": 0, "duration_sec": 0.02, "success": true}
