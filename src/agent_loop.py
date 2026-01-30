@@ -164,7 +164,7 @@ class AgentLoop:
         if self.debugger:
             self.debugger.planner_output({
                 'need_tools': plan.need_tools,
-                'tool_calls': [{'tool_name': tc.get('tool_name'), 'args': tc.get('args')} 
+                'tool_calls': [{'tool_name': tc.tool_name, 'args': tc.args} 
                                for tc in plan.tool_calls] if plan.tool_calls else [],
                 'reason_brief': plan.reason_brief,
                 'stop_condition': plan.stop_condition
