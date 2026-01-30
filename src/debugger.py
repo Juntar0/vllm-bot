@@ -118,6 +118,14 @@ class Debugger:
         status = "✓" if success else "✗"
         self.print("TOOL_RUNNER", f"{status} {tool_name} completed ({output_len} chars)")
     
+    def tool_result_detail(self, tool_name: str, result: Dict[str, Any]) -> None:
+        """Log complete tool result (verbose mode only)"""
+        if not self.enabled or self.level != 'verbose':
+            return
+        
+        self.print("TOOL_RUNNER", f"--- {tool_name} Full Result ---")
+        self.print_dict("TOOL_RUNNER", "Result", result)
+    
     def tool_error(self, tool_name: str, error: str) -> None:
         """Log tool error"""
         if not self.enabled:

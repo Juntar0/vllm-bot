@@ -27,7 +27,8 @@ class ToolRunner:
         self,
         workspace_dir: str,
         constraints: ToolConstraints,
-        audit_log: Optional[AuditLog] = None
+        audit_log: Optional[AuditLog] = None,
+        debugger = None
     ):
         """
         Initialize ToolRunner
@@ -36,12 +37,14 @@ class ToolRunner:
             workspace_dir: Workspace directory for execution
             constraints: ToolConstraints instance
             audit_log: Optional AuditLog instance
+            debugger: Optional Debugger instance
         """
         
         self.workspace_dir = Path(workspace_dir).resolve()
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
         self.constraints = constraints
         self.audit_log = audit_log
+        self.debugger = debugger
         
         # Available tools
         self.tools: Dict[str, Callable] = {
@@ -132,7 +135,7 @@ class ToolRunner:
                     success=not result.get('error')
                 )
             
-            return ToolResult(
+            tool_result = ToolResult(
                 tool_name=tool_name,
                 success=not result.get('error'),
                 output=result.get('output', ''),
@@ -140,6 +143,19 @@ class ToolRunner:
                 exit_code=result.get('exit_code', 0),
                 duration_sec=duration
             )
+            
+            # Debug output
+            if self.debugger:
+                self.debugger.tool_result_detail(tool_name, {
+                    'success': tool_result.success,
+                    'output': tool_result.output[:500] + '...' if len(tool_result.output) > 500 else tool_result.output,
+                    'error': tool_result.error,
+                    'exit_code': tool_result.exit_code,
+                    'duration_sec': tool_result.duration_sec,
+                    'output_length': len(tool_result.output)
+                })
+            
+            return tool_result
         
         except Exception as e:
             duration = time.time() - start

@@ -71,7 +71,8 @@ class Agent:
         self.tool_runner = ToolRunner(
             workspace_dir=config.get('workspace', {}).get('dir', './workspace'),
             constraints=self.constraints,
-            audit_log=self.audit_log
+            audit_log=self.audit_log,
+            debugger=self.debugger
         )
         
         # Planner
